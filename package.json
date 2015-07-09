@@ -1,0 +1,29 @@
+{
+  "name": "zetkin",
+  "version": "0.0.1",
+  "description": "Javascript SDK for the Zetkin platform for organizing activism",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/jasmine"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:zetkin/zetkin-js.git"
+  },
+  "keywords": [
+    "zetkin",
+    "platform",
+    "api",
+    "javascript",
+    "sdk"
+  ],
+  "author": "Richard Olsson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zetkin/zetkin-js/issues"
+  },
+  "homepage": "https://github.com/zetkin/zetkin-js",
+  "devDependencies": {
+    "jasmine": "^2.3.1"
+  }
+}
