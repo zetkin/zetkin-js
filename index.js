@@ -1,4 +1,5 @@
-var http = require('http')
+var http = require('http');
+var https = require('https');
 
 
 /**
@@ -6,7 +7,7 @@ var http = require('http')
  * instances using Z.construct().
 */
 var Zetkin = function() {
-    var session = null;
+    var token = null;
     var config = {
         ssl: true,
         host: 'api.zetk.in',
@@ -27,6 +28,72 @@ var Zetkin = function() {
     this.getConfig = function() {
         return config;
     }
+
+
+    /**
+     * Authenticate as a Zetkin user to create a session. The token is stored
+     * so that all subsequent API requests will be authenticated.
+    */
+    this.authenticate = function(username, password, cb) {
+        if (typeof username !== 'string')
+            throw new TypeError('Username must be a string');
+
+        if (typeof password !== 'string')
+            throw new TypeError('Password must be a string');
+
+        var opts = {
+            method: 'POST',
+            path: '/session',
+            auth: username + ':' + password
+        };
+
+        _request(opts, null, function(success, data) {
+            if (success) {
+                token = data.token;
+            }
+
+            if (cb !== undefined)
+                cb(success, data);
+        });
+    }
+
+    /**
+     * Make request via HTTP or HTTPS depending on the configuration.
+    */
+    var _request = function(options, data, cb) {
+        var client = config.ssl? https : http;
+
+        options.hostname = config.host;
+        options.port = config.port;
+
+        req = client.request(options, function(res) {
+            var json = '';
+
+            res.setEncoding('utf-8');
+            res.on('data', function(chunk) {
+                json += chunk;
+            });
+
+            res.on('end', function() {
+                var data = json? JSON.parse(json) : null;
+
+                cb(true, data, res.statusCode);
+            });
+        });
+
+        req.on('error', function(e) {
+            cb(false, e);
+        });
+
+        if (data) {
+            var json = JSON.stringify(postData)
+            req.write(postData);
+        }
+
+        req.end();
+
+        return req;
+    };
 }
 
 
