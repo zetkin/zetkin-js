@@ -5,7 +5,7 @@ var spyOnRequest = function(client, method, path, content,
 
     spyOn(client, 'request').and.callFake(function(options, cb) {
         expect(options.hostname).toBe('api.zetk.in');
-        expect(options.port).toBe(80);
+        expect(options.port).toBe(443);
         expect(options.method).toBe(method);
         expect(options.path).toBe(path);
 

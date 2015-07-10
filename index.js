@@ -11,7 +11,7 @@ var Zetkin = function() {
     var config = {
         ssl: true,
         host: 'api.zetk.in',
-        port: 80
+        port: 443
     }
 
     this.configure = function(options) {
