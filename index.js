@@ -58,6 +58,18 @@ var Zetkin = function() {
     }
 
     /**
+     * Retrieve a resource proxy through which requests to that resource can be
+     * made.
+     *
+     * Example: Z.resource('orgs', 1, 'people').get() will make a HTTP GET
+     * request to the /orgs/1/people resource.
+    */
+    this.resource = function() {
+        var path = '/' + Array.prototype.join.call(arguments, '/');
+        return new ZetkinResourceProxy(this, path, _request);
+    };
+
+    /**
      * Make request via HTTP or HTTPS depending on the configuration.
     */
     var _request = function(options, data, cb) {
@@ -95,6 +107,58 @@ var Zetkin = function() {
         return req;
     };
 }
+
+
+var ZetkinResourceProxy = function(z, path, _request) {
+    this.getPath = function() {
+        return path;
+    };
+
+    this.get = function(cb) {
+        var opts = {
+            method: 'GET',
+            path: path
+        };
+
+        _request(opts, null, cb);
+    };
+
+    this.post = function(data, cb) {
+        var opts = {
+            method: 'POST',
+            path: path
+        };
+
+        _request(opts, data, cb);
+    };
+
+    this.patch = function(data, cb) {
+        var opts = {
+            method: 'PATCH',
+            path: path
+        };
+
+        _request(opts, data, cb);
+    };
+
+    this.del = function(cb) {
+        var opts = {
+            method: 'DELETE',
+            path: path
+        };
+
+        _request(opts, null, cb);
+    };
+
+    this.put = function(data, cb) {
+        var opts = {
+            method: 'PUT',
+            path: path
+        };
+
+        _request(opts, data, cb);
+    };
+};
 
 
 var Z = new Zetkin()
