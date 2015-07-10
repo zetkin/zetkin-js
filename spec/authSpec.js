@@ -7,7 +7,7 @@ describe('Authentication specs', function() {
         var onAuthenticated = jasmine.createSpy('onAuthenticated');
         var session = { data: { token: 'abc123' }};
 
-        mocks.spyOnRequest(https, 'POST', '/session',
+        mocks.spyOnRequest(https, 'POST', '/session', null,
             201, JSON.stringify(session), function(options) {
                 expect(options.auth).toBe('testuser@example.com:password');
             });

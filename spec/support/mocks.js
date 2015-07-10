@@ -1,6 +1,6 @@
 var http = require('http');
 
-var spyOnRequest = function(client, method, path,
+var spyOnRequest = function(client, method, path, content,
                             responseCode, responseContent, extraExpects) {
 
     spyOn(client, 'request').and.callFake(function(options, cb) {
@@ -20,6 +20,9 @@ var spyOnRequest = function(client, method, path,
         // Mock request
         return {
             on: function(ev, func) {},
+            write: function(chunk) {
+                expect(chunk).toBe(content);
+            },
             end: function() {
                 if (responseContent) {
                     res.emit('data', responseContent);
