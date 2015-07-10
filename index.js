@@ -86,8 +86,8 @@ var Zetkin = function() {
         });
 
         if (data) {
-            var json = JSON.stringify(postData)
-            req.write(postData);
+            var json = JSON.stringify(data)
+            req.write(json);
         }
 
         req.end();
