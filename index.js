@@ -47,13 +47,13 @@ var Zetkin = function() {
             auth: username + ':' + password
         };
 
-        _request(opts, null, function(success, data) {
+        _request(opts, null, function(success, data, statusCode) {
             if (success) {
                 token = data.token;
             }
 
             if (cb !== undefined)
-                cb(success, data);
+                cb(success, data, statusCode);
         });
     }
 

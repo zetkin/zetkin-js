@@ -1,21 +1,23 @@
 describe('Authentication specs', function() {
+    var Z = require('..');
+    var mocks = require('./support/mocks');
+    var https = require('https');
+
     it('makes a request to create a session', function() {
-        var Z = require('..');
-        var https = require('https');
-
-        spyOn(https, 'request').and.callFake(function(options, cb) {
-            expect(options.hostname).toBe('api.zetk.in');
-            expect(options.port).toBe(80);
-            expect(options.auth).toBe('testuser@example.com:password');
-            expect(options.path).toBe('/session');
-
-            cb(new https.IncomingMessage());
-        }).and.callThrough();
-
         var onAuthenticated = jasmine.createSpy('onAuthenticated');
+        var session = { data: { token: 'abc123' }};
 
-        Z.authenticate('testuser@example.com', 'password');
+        mocks.spyOnRequest(https, 'POST', '/session',
+            201, JSON.stringify(session), function(options) {
+                expect(options.auth).toBe('testuser@example.com:password');
+            });
+
+
+        Z.authenticate('testuser@example.com', 'password', onAuthenticated);
         expect(https.request.calls.count()).toBe(1);
+        expect(onAuthenticated.calls.count()).toBe(1);
+        expect(onAuthenticated).toHaveBeenCalledWith(
+            true, session, 201);
     });
 
     it('rejects non-string username', function() {
