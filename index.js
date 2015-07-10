@@ -49,7 +49,7 @@ var Zetkin = function() {
 
         _request(opts, null, function(success, data, statusCode) {
             if (success) {
-                token = data.token;
+                token = data.data.token;
             }
 
             if (cb !== undefined)
@@ -77,6 +77,12 @@ var Zetkin = function() {
 
         options.hostname = config.host;
         options.port = config.port;
+
+        if (token) {
+            options.headers = {
+                'Authorization': 'Zetkin-Token ' + token
+            };
+        }
 
         req = client.request(options, function(res) {
             var json = '';
