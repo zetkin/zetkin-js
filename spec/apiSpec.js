@@ -9,6 +9,15 @@ describe('API requests', function() {
         expect(resource.getPath()).toBe('/orgs/1/people/1337');
     });
 
+    it('makes a request with a error response code', function() {
+        var onComplete = jasmine.createSpy('onComplete');
+        mocks.spyOnRequest(https, 'GET', '/', null, 400);
+
+        Z.resource().get(onComplete);
+
+        expect(onComplete).toHaveBeenCalledWith(false, null, 400);
+    });
+
     it('makes a GET request', function() {
         var onComplete = jasmine.createSpy('onComplete');
         mocks.spyOnRequest(https, 'GET', '/orgs/1/people/1337', null,

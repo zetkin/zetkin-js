@@ -95,7 +95,8 @@ var Zetkin = function() {
             res.on('end', function() {
                 var data = json? JSON.parse(json) : null;
 
-                cb(true, data, res.statusCode);
+                var success = (res.statusCode >= 200 && res.statusCode < 400);
+                cb(success, data, res.statusCode);
             });
         });
 
