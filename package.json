@@ -1,6 +1,6 @@
 {
   "name": "zetkin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Javascript SDK for the Zetkin platform for organizing activism",
   "main": "index.js",
   "scripts": {
