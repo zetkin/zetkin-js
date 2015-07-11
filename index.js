@@ -75,6 +75,7 @@ var Zetkin = function() {
     var _request = function(options, data, cb) {
         var client = config.ssl? https : http;
 
+        options.withCredentials = false;
         options.hostname = config.host;
         options.port = config.port;
 
