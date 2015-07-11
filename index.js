@@ -88,7 +88,12 @@ var Zetkin = function() {
         req = client.request(options, function(res) {
             var json = '';
 
-            res.setEncoding('utf-8');
+            if (res.setEncoding) {
+                // The setEncoding() method may not exist, e.g. if running in
+                // the browser using the Browserify abstraction layer.
+                res.setEncoding('utf-8');
+            }
+
             res.on('data', function(chunk) {
                 json += chunk;
             });
