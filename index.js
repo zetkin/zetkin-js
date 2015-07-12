@@ -7,8 +7,8 @@ var https = require('https');
  * instances using Z.construct().
 */
 var Zetkin = function() {
-    var token = null;
-    var config = {
+    var _token = null;
+    var _config = {
         ssl: true,
         host: 'api.zetk.in',
         port: 443
@@ -16,8 +16,8 @@ var Zetkin = function() {
 
     this.configure = function(options) {
         for (var key in options) {
-            if (key in config) {
-                config[key] = options[key];
+            if (key in _config) {
+                _config[key] = options[key];
             }
             else {
                 throw new TypeError('Unknown config option: ' + key);
@@ -26,7 +26,7 @@ var Zetkin = function() {
     }
 
     this.getConfig = function() {
-        return config;
+        return _config;
     }
 
 
@@ -48,7 +48,7 @@ var Zetkin = function() {
         };
 
         return _request(opts, null).then(function(data, statusCode) {
-            token = data.data.token;
+            _token = data.data.token;
         });
     }
 
@@ -68,15 +68,15 @@ var Zetkin = function() {
      * Make request via HTTP or HTTPS depending on the configuration.
     */
     var _request = function(options, data) {
-        var client = config.ssl? https : http;
+        var client = _config.ssl? https : http;
 
         options.withCredentials = false;
-        options.hostname = config.host;
-        options.port = config.port;
+        options.hostname = _config.host;
+        options.port = _config.port;
 
-        if (token) {
+        if (_token) {
             options.headers = {
-                'Authorization': 'Zetkin-Token ' + token
+                'Authorization': 'Zetkin-Token ' + _token
             };
         }
 
