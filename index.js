@@ -34,7 +34,7 @@ var Zetkin = function() {
      * Authenticate as a Zetkin user to create a session. The token is stored
      * so that all subsequent API requests will be authenticated.
     */
-    this.authenticate = function(username, password, cb) {
+    this.authenticate = function(username, password) {
         if (typeof username !== 'string')
             throw new TypeError('Username must be a string');
 
@@ -47,13 +47,8 @@ var Zetkin = function() {
             auth: username + ':' + password
         };
 
-        _request(opts, null, function(success, data, statusCode) {
-            if (success) {
-                token = data.data.token;
-            }
-
-            if (cb !== undefined)
-                cb(success, data, statusCode);
+        return _request(opts, null).then(function(data, statusCode) {
+            token = data.data.token;
         });
     }
 
@@ -72,7 +67,7 @@ var Zetkin = function() {
     /**
      * Make request via HTTP or HTTPS depending on the configuration.
     */
-    var _request = function(options, data, cb) {
+    var _request = function(options, data) {
         var client = config.ssl? https : http;
 
         options.withCredentials = false;
@@ -85,39 +80,44 @@ var Zetkin = function() {
             };
         }
 
-        req = client.request(options, function(res) {
-            var json = '';
+        return new Promise(function(resolve, reject) {
+            req = client.request(options, function(res) {
+                var json = '';
 
-            if (res.setEncoding) {
-                // The setEncoding() method may not exist, e.g. if running in
-                // the browser using the Browserify abstraction layer.
-                res.setEncoding('utf-8');
+                if (res.setEncoding) {
+                    // The setEncoding() method may not exist, e.g. if running in
+                    // the browser using the Browserify abstraction layer.
+                    res.setEncoding('utf-8');
+                }
+
+                res.on('data', function(chunk) {
+                    json += chunk;
+                });
+
+                res.on('end', function() {
+                    var data = json? JSON.parse(json) : null;
+
+                    var success = (res.statusCode >= 200 && res.statusCode < 400);
+                    if (success) {
+                        resolve(data, res.statusCode);
+                    }
+                    else {
+                        reject(data, res.statusCode);
+                    }
+                });
+            });
+
+            req.on('error', function(e) {
+                reject(e);
+            });
+
+            if (data) {
+                var json = JSON.stringify(data)
+                req.write(json);
             }
 
-            res.on('data', function(chunk) {
-                json += chunk;
-            });
-
-            res.on('end', function() {
-                var data = json? JSON.parse(json) : null;
-
-                var success = (res.statusCode >= 200 && res.statusCode < 400);
-                cb(success, data, res.statusCode);
-            });
+            req.end();
         });
-
-        req.on('error', function(e) {
-            cb(false, e);
-        });
-
-        if (data) {
-            var json = JSON.stringify(data)
-            req.write(json);
-        }
-
-        req.end();
-
-        return req;
     };
 }
 
@@ -127,13 +127,13 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return path;
     };
 
-    this.get = function(cb) {
+    this.get = function() {
         var opts = {
             method: 'GET',
             path: path
         };
 
-        _request(opts, null, cb);
+        return _request(opts, null);
     };
 
     this.post = function(data, cb) {
@@ -142,34 +142,34 @@ var ZetkinResourceProxy = function(z, path, _request) {
             path: path
         };
 
-        _request(opts, data, cb);
+        return _request(opts, data, cb);
     };
 
-    this.patch = function(data, cb) {
+    this.patch = function(data) {
         var opts = {
             method: 'PATCH',
             path: path
         };
 
-        _request(opts, data, cb);
+        return _request(opts, data);
     };
 
-    this.del = function(cb) {
+    this.del = function() {
         var opts = {
             method: 'DELETE',
             path: path
         };
 
-        _request(opts, null, cb);
+        return _request(opts, null);
     };
 
-    this.put = function(data, cb) {
+    this.put = function(data) {
         var opts = {
             method: 'PUT',
             path: path
         };
 
-        _request(opts, data, cb);
+        return _request(opts, data);
     };
 };
 
