@@ -9,6 +9,7 @@ var https = require('https');
 var Zetkin = function() {
     var _token = null;
     var _config = {
+        base: '',
         ssl: true,
         host: 'api.zetk.in',
         port: 443
@@ -43,7 +44,7 @@ var Zetkin = function() {
 
         var opts = {
             method: 'POST',
-            path: '/session',
+            path: _config.base + '/session',
             auth: username + ':' + password
         };
 
@@ -78,6 +79,10 @@ var Zetkin = function() {
         path = Array.prototype.join.call(arguments, '/');
         if (path.length == 0 || path[0] != '/') {
             path = '/' + path;
+        }
+
+        if (_config.base) {
+            path = _config.base + path;
         }
 
         return new ZetkinResourceProxy(this, path, _request);

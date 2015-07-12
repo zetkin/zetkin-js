@@ -9,6 +9,13 @@ describe('API requests', function() {
         expect(resource.getPath()).toBe('/orgs/1/people/1337');
     });
 
+    it('creates a resource proxy with base path', function() {
+        Z.configure({ base: '/base' });
+        var resource = Z.resource('orgs', 1, 'people', 1337);
+        expect(resource).toBeDefined();
+        expect(resource.getPath()).toBe('/base/orgs/1/people/1337');
+    });
+
     xit('makes a request with a error response code', function() {
         var onComplete = jasmine.createSpy('onComplete');
         var onError = jasmine.createSpy('onError');
