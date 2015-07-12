@@ -7,22 +7,18 @@ it to build applications on top of the Zetkin Platform. The SDK can be used in t
 var email = 'testadmin@example.com';
 var pwd = 'password';
 
-Z.authenticate(email, pwd, function(success, data, statusCode) {
-  if (!success) {
-    console.log('could not log in!');
-    return;
-  }
-
-  Z.resource('/users/me').get(function(success, data, statusCode) {
-    if (success) {
-      console.log(data);
-    }
-    else {
-      console.log('error! ' + statusCode);
-      console.log(data);
-    }
+Z.authenticate(email, pwd)
+  .then(function(data, statusCode) {
+    // Successfully authenticated
+    Z.resource('/users/me').get()
+      .then(function(data, statusCode) {
+        console.log(data);
+      })
+      .catch(function(data, statusCode) {
+        console.log('error! ' + statusCode);
+        console.log(data);
+      });
   });
-});
 ```
 
 ## Authentication
@@ -47,21 +43,21 @@ Z.resource('/orgs/1/people').get();
 The only (optional) argument to the `get()` method is a callback. The same is true for the `put()` method. Request callbacks have three parameters, a `success` boolean to indicate success or failure, a `data` argument which can be anything depending on what (if anything) was returned by the request, and a `statusCode` argument which is the numeric HTTP response code. Obviously you can name them however you want, but the standard names are reasonable and make sense.
 
 ```javascript
-function onComplete(success, data, statusCode) {
-  console.log(success, data, statusCode);
+function onComplete(data, statusCode) {
+  console.log(data, statusCode);
 }
-Z.resource('/orgs/1/people').get(onComplete);
+Z.resource('/orgs/1/people').get().then(onComplete);
 ```
 
 Some HTTP verbs support request data, i.e. `POST`, `PUT` and `PATCH`. These request methods accept two (optional) arguments, `data`, and `callback`.
 
 ```javascript
-function onComplete(success, responseData, statusCode) {
-  console.log(success, responseData, statusCode);
+function onComplete(responseData, statusCode) {
+  console.log(responseData, statusCode);
 }
 
 var requestData = { first_name: 'Clara' };
-Z.resource('/orgs/1/people').post(requestData, onComplete);
+Z.resource('/orgs/1/people').post(requestData).then(onComplete);
 ```
 
 ### Composing resource paths
