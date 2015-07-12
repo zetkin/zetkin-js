@@ -53,6 +53,13 @@ var Zetkin = function() {
     }
 
     /**
+     * Get the token used for authentication in this instance.
+    */
+    this.getToken = function() {
+        return _token;
+    };
+
+    /**
      * Explicitly set a token without making an authentication request to the
      * API. Useful when token is retrieved through some other means.
     */
