@@ -53,6 +53,14 @@ var Zetkin = function() {
     }
 
     /**
+     * Explicitly set a token without making an authentication request to the
+     * API. Useful when token is retrieved through some other means.
+    */
+    this.setToken = function(token) {
+        _token = token;
+    };
+
+    /**
      * Retrieve a resource proxy through which requests to that resource can be
      * made.
      *
