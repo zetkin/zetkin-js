@@ -108,6 +108,7 @@ Z.configure({
 });
 ```
 The available options are:
+* `base`: the base path, or path prefix, on the server. The default is no prefix (empty string).
 * `host`: the hostname of the Zetkin Platform API server. The default is _api.zetk.in_.
 * `port`: the port on which the API listens. The default is _443_.
 * `ssl`: Whether to connect using HTTPS (true) or HTTP (false). The default is _true_, i.e. to connect securely using HTTPS.
