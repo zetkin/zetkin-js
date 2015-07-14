@@ -48,8 +48,8 @@ var Zetkin = function() {
             auth: username + ':' + password
         };
 
-        return _request(opts, null).then(function(data, statusCode) {
-            _token = data.data.token;
+        return _request(opts, null).then(function(res) {
+            _token = res.data.data.token;
         });
     }
 
@@ -123,10 +123,16 @@ var Zetkin = function() {
 
                     var success = (res.statusCode >= 200 && res.statusCode < 400);
                     if (success) {
-                        resolve(data, res.statusCode);
+                        resolve({
+                            data: data,
+                            httpStatus: res.statusCode
+                        });
                     }
                     else {
-                        reject(data, res.statusCode);
+                        reject({
+                            data: data,
+                            httpStatus: res.statusCode
+                        });
                     }
                 });
             });
