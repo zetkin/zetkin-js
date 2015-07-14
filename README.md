@@ -8,15 +8,15 @@ var email = 'testadmin@example.com';
 var pwd = 'password';
 
 Z.authenticate(email, pwd)
-  .then(function(data, statusCode) {
+  .then(function(res) {
     // Successfully authenticated
     Z.resource('/users/me').get()
-      .then(function(data, statusCode) {
-        console.log(data);
+      .then(function(res) {
+        console.log(res.data);
       })
-      .catch(function(data, statusCode) {
-        console.log('error! ' + statusCode);
-        console.log(data);
+      .catch(function(err) {
+        console.log('error! ' + err.httpStatus);
+        console.log(err.data);
       });
   });
 ```
@@ -40,11 +40,15 @@ Z.resource('/orgs/1/people').get();
 ```
 
 ### Request fundamentals
-The only (optional) argument to the `get()` method is a callback. The same is true for the `put()` method. Request callbacks have three parameters, a `success` boolean to indicate success or failure, a `data` argument which can be anything depending on what (if anything) was returned by the request, and a `statusCode` argument which is the numeric HTTP response code. Obviously you can name them however you want, but the standard names are reasonable and make sense.
+The only (optional) argument to the `get()` method is a callback. The same is true for the `put()` method.
+
+Requests return promises, which follow the normal promise conventions. Both the resolve and reject methods return a single argument, an object with a `data` and a `httpStatus` attribute.
+
+The `data` attribute can be anything depending on what (if anything) was returned by the request, and the `httpStatus` attribute is the numeric HTTP response code.
 
 ```javascript
-function onComplete(data, statusCode) {
-  console.log(data, statusCode);
+function onComplete(res) {
+  console.log(res.data, res.httpStatus);
 }
 Z.resource('/orgs/1/people').get().then(onComplete);
 ```
@@ -52,8 +56,8 @@ Z.resource('/orgs/1/people').get().then(onComplete);
 Some HTTP verbs support request data, i.e. `POST`, `PUT` and `PATCH`. These request methods accept two (optional) arguments, `data`, and `callback`.
 
 ```javascript
-function onComplete(responseData, statusCode) {
-  console.log(responseData, statusCode);
+function onComplete(res) {
+  console.log(res.data, res.httpStatus);
 }
 
 var requestData = { first_name: 'Clara' };
