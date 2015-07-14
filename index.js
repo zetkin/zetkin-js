@@ -166,13 +166,13 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return _request(opts, null);
     };
 
-    this.post = function(data, cb) {
+    this.post = function(data) {
         var opts = {
             method: 'POST',
             path: path
         };
 
-        return _request(opts, data, cb);
+        return _request(opts, data);
     };
 
     this.patch = function(data) {
