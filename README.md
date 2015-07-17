@@ -21,6 +21,13 @@ Z.authenticate(email, pwd)
   });
 ```
 
+## Installation
+Install the Zetkin javascript SDK via npm.
+
+```
+npm install zetkin
+```
+
 ## Authentication
 In the Zetkin Platform API, authentication is a matter of creating a session by issuing a `POST` request to `/session` using the Basic HTTP Authorization scheme. A token is returned, and this will need to be sent along with all further requests.
 
