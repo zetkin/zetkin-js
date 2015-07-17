@@ -91,7 +91,7 @@ var Zetkin = function() {
     /**
      * Make request via HTTP or HTTPS depending on the configuration.
     */
-    var _request = function(options, data) {
+    var _request = function(options, data, meta) {
         var client = _config.ssl? https : http;
 
         options.withCredentials = false;
@@ -125,12 +125,14 @@ var Zetkin = function() {
                     if (success) {
                         resolve({
                             data: data,
+                            meta: meta,
                             httpStatus: res.statusCode
                         });
                     }
                     else {
                         reject({
                             data: data,
+                            meta: meta,
                             httpStatus: res.statusCode
                         });
                     }
@@ -153,8 +155,24 @@ var Zetkin = function() {
 
 
 var ZetkinResourceProxy = function(z, path, _request) {
+    var _meta = {};
+
     this.getPath = function() {
         return path;
+    };
+
+    this.meta = function(keyOrObj, valueIfAny) {
+        if (arguments.length == 2) {
+            _meta[keyOrObj] = valueIfAny;
+        }
+        else {
+            var key;
+            for (key in keyOrObj) {
+                _meta[key] = keyOrObj[key];
+            }
+        }
+
+        return this;
     };
 
     this.get = function() {
@@ -163,7 +181,7 @@ var ZetkinResourceProxy = function(z, path, _request) {
             path: path
         };
 
-        return _request(opts, null);
+        return _request(opts, null, _meta);
     };
 
     this.post = function(data) {
@@ -172,7 +190,7 @@ var ZetkinResourceProxy = function(z, path, _request) {
             path: path
         };
 
-        return _request(opts, data);
+        return _request(opts, data, _meta);
     };
 
     this.patch = function(data) {
@@ -181,7 +199,7 @@ var ZetkinResourceProxy = function(z, path, _request) {
             path: path
         };
 
-        return _request(opts, data);
+        return _request(opts, data, _meta);
     };
 
     this.del = function() {
@@ -190,7 +208,7 @@ var ZetkinResourceProxy = function(z, path, _request) {
             path: path
         };
 
-        return _request(opts, null);
+        return _request(opts, null, _meta);
     };
 
     this.put = function(data) {
@@ -199,7 +217,7 @@ var ZetkinResourceProxy = function(z, path, _request) {
             path: path
         };
 
-        return _request(opts, data);
+        return _request(opts, data, _meta);
     };
 };
 
