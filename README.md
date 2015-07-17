@@ -95,6 +95,33 @@ person2.resource.delete();
 
 Whether this makes sense will depend on your application architecture, but ain't it nice to have options?
 
+### Passing meta-data to callbacks
+Oftentimes when your request finishes and the promise resolves you need to know more about the context in which the request was made. The resource proxy meta-data exists for this purpose. You can add any meta-data to a resource proxy and it will be passed in the `res` or `err` object when the promise is resolved or rejected.
+
+```javascript
+function onComplete(res) {
+  console.log(res.meta.org_id); // 4
+}
+
+Z.resource('/orgs/4/people')
+  .meta('org_id', 4)
+  .get()
+  .then(onComplete);
+```
+
+The `meta()` method can be passed a key-value pair like above, or a full object, in which case the contents will be copied to the internal meta object.
+
+```javascript
+Z.resource('/orgs/4/people').meta({
+  // My custom meta-data
+  org_id: 4,
+  reason: 'search',
+  redir_on_success: '/done'
+}).get();
+```
+
+This allows you to send along complex meta-data to your callbacks.
+
 ## Advanced use
 In most cases, nothing more than getting hold of the `Z` object and authenticating via `authenticate()` is necessary. However to some users, there might be cases where one would want to configure the SDK or create multiple instances to talk to separate back-ends.
 
