@@ -37,7 +37,7 @@ The SDK abstract away most of this. The special `authenticate()` method is a sho
 Z.authenticate('testadmin@example.com', 'password');
 ```
 
-The `username` and `password` arguments must be strings, or the function will throw a `TypeError`. A callback is accepted as an optional but recommended third argument.
+The `username` and `password` arguments must be strings, or the function will throw a `TypeError`. The method returns a promise like any other request (keep reading for details).
 
 ## Resource proxies and requests
 In the SDK, API resources are represented by proxies created by the `resource()` function. Requests can be made to resources using methods on the proxy representing the HTTP verbs.
@@ -47,9 +47,7 @@ Z.resource('/orgs/1/people').get();
 ```
 
 ### Request fundamentals
-The only (optional) argument to the `get()` method is a callback. The same is true for the `put()` method.
-
-Requests return promises, which follow the normal promise conventions. Both the resolve and reject methods return a single argument, an object with a `data` and a `httpStatus` attribute.
+Requests return promises, which follow the normal promise conventions. Both the resolve and reject methods receive a single argument, an object with a `data` and a `httpStatus` attribute. A third attribute, `meta` is less self-explanatory but is covered later in this document.
 
 The `data` attribute can be anything depending on what (if anything) was returned by the request, and the `httpStatus` attribute is the numeric HTTP response code.
 
