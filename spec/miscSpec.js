@@ -48,4 +48,17 @@ describe('Misc specs', function() {
         expect(constructWithBadParam)
             .toThrowError(TypeError, 'Unknown config option: unknownParam');
     });
+
+    it('copies global config when instantiating', function() {
+        var Z = require('..');
+        Z.configure({ host: 'baz' });
+
+        var z0 = Z.construct();
+
+        Z.configure({ host: 'foobar' });
+        var z1 = Z.construct();
+
+        expect(z0.getConfig().host).toBe('baz');
+        expect(z1.getConfig().host).toBe('foobar');
+    });
 });

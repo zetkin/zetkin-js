@@ -226,6 +226,7 @@ var Z = new Zetkin()
 
 Z.construct = function(instanceOptions) {
     zetkin = new Zetkin();
+    zetkin.configure(Z.getConfig());
     zetkin.configure(instanceOptions);
     return zetkin;
 }
