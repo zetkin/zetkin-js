@@ -109,6 +109,8 @@ var Zetkin = function() {
      * request to the /orgs/1/people resource.
     */
     this.resource = function() {
+        var numRetries = 0;
+
         path = Array.prototype.join.call(arguments, '/');
         if (path.length == 0 || path[0] != '/') {
             path = '/' + path;
@@ -144,8 +146,22 @@ var Zetkin = function() {
                                 return _request(options, data, meta);
                             })
                     }
+                    else if (err.httpStatus === 401
+                        && err.data.message === 'Stale timestamp'
+                        && numRetries < 3) {
+
+                        // Reset internal clock and retry request
+                        var msg = err.data.attributes;
+                        if (Hawk.client.authenticateTimestamp(msg, _ticket)) {
+                            numRetries++;
+                            return _request(options, data, meta);
+                        }
+                        else {
+                            throw err;
+                        }
+                    }
                     else {
-                        console.error('UNHANDLED REQUEST ERR', err);
+                        throw err;
                     }
                 });
         };
