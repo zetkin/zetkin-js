@@ -119,6 +119,11 @@ var Zetkin = function() {
         path = _config.base + '/v' + _config.version + path;
 
         var request = function(options, data, meta) {
+            if (data) {
+                options.headers = options.headers || {};
+                options.headers['content-type'] = 'application/json';
+            }
+
             return _request(options, data, meta)
                 .catch(function(err) {
                     if (err.httpStatus === 401 && err.data.expired) {
@@ -178,6 +183,7 @@ var Zetkin = function() {
         options.withCredentials = false;
         options.hostname = _config.host;
         options.port = _config.port;
+        options.headers = options.headers || {};
 
         if (_ticket) {
             var urlBase = (_config.ssl? 'https' : 'http')
@@ -185,9 +191,8 @@ var Zetkin = function() {
 
             var uri = urlBase + options.path;
 
-            options.headers = {
-                authorization: hawkHeader(uri, options.method, _ticket).field
-            };
+            options.headers.authorization =
+                hawkHeader(uri, options.method, _ticket).field
         }
 
         return new Promise(function(resolve, reject) {
