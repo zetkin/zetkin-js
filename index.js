@@ -9,7 +9,6 @@ var https = require('https');
  * instances using Z.construct().
 */
 var Zetkin = function() {
-    var _token = null;
     var _ticket = null;
     var _config = {
         base: '',
@@ -88,18 +87,18 @@ var Zetkin = function() {
     }
 
     /**
-     * Get the token used for authentication in this instance.
+     * Get the ticket used for authentication in this instance.
     */
-    this.getToken = function() {
-        return _token;
+    this.getTicket = function() {
+        return _ticket;
     };
 
     /**
-     * Explicitly set a token without making an authentication request to the
-     * API. Useful when token is retrieved through some other means.
+     * Explicitly set a ticket without making an authentication request to the
+     * API. Useful when ticket is retrieved through some other means.
     */
-    this.setToken = function(token) {
-        _token = token;
+    this.setTicket = function(ticket) {
+        _ticket = ticket;
     };
 
     /**
