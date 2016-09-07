@@ -25,5 +25,9 @@
   "homepage": "https://github.com/zetkin/zetkin-js",
   "devDependencies": {
     "jasmine": "^2.3.1"
+  },
+  "dependencies": {
+    "hawk": "^6.0.0",
+    "hoek": "^4.0.2"
   }
 }

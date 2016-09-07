@@ -1,3 +1,5 @@
+var Hawk = require('hawk');
+var Hoek = require('hoek');
 var http = require('http');
 var https = require('https');
 
@@ -8,8 +10,10 @@ var https = require('https');
 */
 var Zetkin = function() {
     var _token = null;
+    var _ticket = null;
     var _config = {
         base: '',
+        version: 1,
         ssl: true,
         host: 'api.zetk.in',
         port: 443
@@ -32,25 +36,55 @@ var Zetkin = function() {
 
 
     /**
-     * Authenticate as a Zetkin user to create a session. The token is stored
-     * so that all subsequent API requests will be authenticated.
+     * Initialize Z instance so that it's ready to make API calls. Requires
+     * a set of application credentials consisting of an app ID and an app key
+     * as well as an RSVP token as returned by the Zetkin Platform login page.
     */
-    this.authenticate = function(username, password) {
-        if (typeof username !== 'string')
-            throw new TypeError('Username must be a string');
-
-        if (typeof password !== 'string')
-            throw new TypeError('Password must be a string');
-
-        var opts = {
-            method: 'POST',
-            path: _config.base + '/session',
-            auth: username + ':' + password
+    this.init = function(appId, appKey, rsvp, cb) {
+        var app = {
+            id: appId,
+            key: appKey,
+            algorithm: 'sha256',
         };
 
-        return _request(opts, null).then(function(res) {
-            _token = res.data.data.token;
-        });
+        var urlBase = (_config.ssl? 'https' : 'http')
+            + '://' + _config.host + _config.base;
+
+        var appHeader = hawkHeader(urlBase + '/oz/app', 'POST', app);
+        var appOpts = {
+            method: 'POST',
+            path: _config.base + '/oz/app',
+            json: true,
+            headers: {
+                authorization: appHeader.field,
+                'content-type': 'application/json',
+            }
+        };
+
+        return _request(appOpts, null)
+            .then(function(res) {
+                var appTicket = res.data;
+
+                var rsvpHeader = hawkHeader(
+                    urlBase + '/oz/rsvp', 'POST', appTicket);
+
+                var rsvpOpts = {
+                    method: 'POST',
+                    path: _config.base + '/oz/rsvp',
+                    json: true,
+                    headers: {
+                        authorization: rsvpHeader.field,
+                        'content-type': 'application/json',
+                    },
+                };
+
+                return _request(rsvpOpts, { rsvp: rsvp });
+            })
+            .then(function(res) {
+                _ticket = res.data;
+
+                cb(_ticket);
+            });
     }
 
     /**
@@ -81,11 +115,43 @@ var Zetkin = function() {
             path = '/' + path;
         }
 
-        if (_config.base) {
-            path = _config.base + path;
-        }
+        path = _config.base + '/v' + _config.version + path;
 
-        return new ZetkinResourceProxy(this, path, _request);
+        var request = function(options, data, meta) {
+            return _request(options, data, meta)
+                .catch(function(err) {
+                    if (err.httpStatus === 401 && err.data.expired) {
+                        var urlBase = (_config.ssl? 'https' : 'http')
+                            + '://' + _config.host + _config.base;
+
+                        var reissueHeader = hawkHeader(
+                            urlBase + '/oz/reissue', 'POST', _ticket);
+
+                        var reissueOpts = {
+                            method: 'POST',
+                            path: _config.base + '/oz/reissue',
+                            json: true,
+                            headers: {
+                                authorization: reissueHeader.field,
+                                'content-type': 'application/json',
+                            },
+                        };
+
+                        return _request(reissueOpts)
+                            .then(res => {
+                                _ticket = res.data;
+
+                                // Continue request
+                                return _request(options, data, meta);
+                            })
+                    }
+                    else {
+                        console.error('UNHANDLED REQUEST ERR', err);
+                    }
+                });
+        };
+
+        return new ZetkinResourceProxy(this, path, request);
     };
 
     /**
@@ -98,9 +164,14 @@ var Zetkin = function() {
         options.hostname = _config.host;
         options.port = _config.port;
 
-        if (_token) {
+        if (_ticket) {
+            var urlBase = (_config.ssl? 'https' : 'http')
+                + '://' + _config.host + _config.base;
+
+            var uri = urlBase + options.path;
+
             options.headers = {
-                'Authorization': 'Zetkin-Token ' + _token
+                authorization: hawkHeader(uri, options.method, _ticket).field
             };
         }
 
@@ -220,6 +291,15 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return _request(opts, data, _meta);
     };
 };
+
+function hawkHeader(uri, method, ticket, options) {
+    var settings = Hoek.shallow(options || {});
+    settings.credentials = ticket;
+    settings.app = ticket.app;
+    settings.dl = ticket.dlg;
+
+    return Hawk.client.header(uri, method, settings);
+}
 
 
 var Z = new Zetkin()

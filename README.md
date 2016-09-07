@@ -4,12 +4,9 @@ it to build applications on top of the Zetkin Platform. The SDK can be used in t
 
 ## At a glance
 ```javascript
-var email = 'testadmin@example.com';
-var pwd = 'password';
-
-Z.authenticate(email, pwd)
+Z.init(appId, appKey, rsvp)
   .then(function(res) {
-    // Successfully authenticated
+    // Successfully initialized
     Z.resource('/users/me').get()
       .then(function(res) {
         console.log(res.data);
@@ -29,15 +26,20 @@ npm install zetkin
 ```
 
 ## Authentication
-In the Zetkin Platform API, authentication is a matter of creating a session by issuing a `POST` request to `/session` using the Basic HTTP Authorization scheme. A token is returned, and this will need to be sent along with all further requests.
+To authenticate with the Zetkin Platform API, the user must be redirected to
+login.zetk.in, and will return with an RSVP token. Use your application
+credentials and that token to initialize the SDK.
 
-The SDK abstract away most of this. The special `authenticate()` method is a shortcut for authenticating and storing the token to be used in all subsequent requests.
+The SDK will exchange the RSVP token for a ticket and then manage the ticket
+lifecycle transparently.
 
 ```javascript
-Z.authenticate('testadmin@example.com', 'password');
+Z.init(myAppId, myAppKey, rsvpFromLogin)
+    .then(ticket => {
+        // You can ignore ticket, which is used internally
+        console.log('Got ticket', ticket);
+    });
 ```
-
-The `username` and `password` arguments must be strings, or the function will throw a `TypeError`. The method returns a promise like any other request (keep reading for details).
 
 ## Resource proxies and requests
 In the SDK, API resources are represented by proxies created by the `resource()` function. Requests can be made to resources using methods on the proxy representing the HTTP verbs.
