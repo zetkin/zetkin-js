@@ -60,7 +60,7 @@ function onComplete(res) {
 Z.resource('/orgs/1/people').get().then(onComplete);
 ```
 
-Some HTTP verbs support request data, i.e. `POST`, `PUT` and `PATCH`. These request methods accept two (optional) arguments, `data`, and `callback`.
+Some HTTP verbs support request data, i.e. `POST`, `PUT` and `PATCH`. These request methods accept an (optional) argument, `data`, which will be serialized as JSON and sent in the request body.
 
 ```javascript
 function onComplete(res) {
