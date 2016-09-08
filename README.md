@@ -130,7 +130,7 @@ Z.resource('/orgs/4/people').meta({
 This allows you to send along complex meta-data to your callbacks.
 
 ## Advanced use
-In most cases, nothing more than getting hold of the `Z` object and authenticating via `authenticate()` is necessary. However to some users, there might be cases where one would want to configure the SDK or create multiple instances to talk to separate back-ends.
+In most cases, nothing more than getting hold of the `Z` object and initializing via `initialize()` is necessary. However to some users, there might be cases where one would want to configure the SDK or create multiple instances to talk to separate back-ends.
 
 ### Reconfigure SDK
 The `configure()` function allows some options to be reconfigured from their usually reasonable defaults.
@@ -148,15 +148,16 @@ The available options are:
 * `ssl`: Whether to connect using HTTPS (true) or HTTP (false). The default is _true_, i.e. to connect securely using HTTPS.
 
 ### Running multiple instances
-If your application requires several users to be authenticated at the same time (multiple sessions), or to have different requests be made to separate back-ends (multiple configurations) you can create separate instances.
+If your application requires several users to be authenticated at the same time (multiple sessions), or to have different requests be made to separate back-ends (multiple configurations) you can create separate instances. This is especially useful in a multi-user environment such as a server.
 
 The `construct()` function creates a new `Z` instance and returns it. You will need to store a reference to it yourself.
 
 ```javascript
-var AdminZ = Z.construct();
-
-Z.authenticate('testuser@example.com', 'password');
-AdminZ.authenticate('testadmin@example.com', 'password');
+// Express server app
+app.use((req, res, next) => {
+    req.z = z.construct();
+    next();
+});
 ```
 
 As a convenience, a `config` object can be passed to the `construct()` function directly.
