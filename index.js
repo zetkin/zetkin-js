@@ -64,6 +64,11 @@ var Zetkin = function() {
             .then(function(res) {
                 var appTicket = res.data;
 
+                if (!appTicket) {
+                    // TODO: Add error to callback
+                    return cb(null);
+                }
+
                 var rsvpHeader = hawkHeader(
                     urlBase + '/oz/rsvp', 'POST', appTicket);
 
@@ -83,6 +88,9 @@ var Zetkin = function() {
                 _ticket = res.data;
 
                 cb(_ticket);
+            })
+            .catch(function(err) {
+                console.log('Z error', err);
             });
     }
 
