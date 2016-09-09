@@ -10,6 +10,7 @@ var https = require('https');
 */
 var Zetkin = function() {
     var _ticket = null;
+    var _offsetSec = 0;
     var _config = {
         base: '',
         version: 1,
@@ -34,12 +35,17 @@ var Zetkin = function() {
     }
 
 
+    // TODO: Remove these after generalizing timesync logic
+    var _this = this;
+    var _numInitRetries = 0;
+
     /**
      * Initialize Z instance so that it's ready to make API calls. Requires
      * a set of application credentials consisting of an app ID and an app key
      * as well as an RSVP token as returned by the Zetkin Platform login page.
     */
     this.init = function(appId, appKey, rsvp, cb) {
+
         var app = {
             id: appId,
             key: appKey,
@@ -49,7 +55,9 @@ var Zetkin = function() {
         var urlBase = (_config.ssl? 'https' : 'http')
             + '://' + _config.host + _config.base;
 
-        var appHeader = hawkHeader(urlBase + '/oz/app', 'POST', app);
+        var appHeader = hawkHeader(urlBase + '/oz/app', 'POST', app, {
+            localtimeOffsetMsec: _offsetSec * 1000 });
+
         var appOpts = {
             method: 'POST',
             path: _config.base + '/oz/app',
@@ -70,7 +78,8 @@ var Zetkin = function() {
                 }
 
                 var rsvpHeader = hawkHeader(
-                    urlBase + '/oz/rsvp', 'POST', appTicket);
+                    urlBase + '/oz/rsvp', 'POST', appTicket, {
+                        localtimeOffsetMsec: _offsetSec * 1000 });
 
                 var rsvpOpts = {
                     method: 'POST',
@@ -86,11 +95,30 @@ var Zetkin = function() {
             })
             .then(function(res) {
                 _ticket = res.data;
+                _numInitRetries = 0;
 
                 cb(_ticket);
             })
             .catch(function(err) {
-                console.log('Z error', err);
+                // TODO: This is duplicate logic
+                //       Consider a way to join with code in resource()
+                if (err.httpStatus === 401
+                    && err.data.message === 'Stale timestamp'
+                    && _numInitRetries < 5) {
+                        // Reset internal clock and retry request
+                        var msg = err.data.attributes;
+
+                        // Store offset and retry
+                        _numInitRetries++;
+                        _offsetSec = msg.ts - Hawk.utils.nowSecs();
+                        return _this.init(appId, appKey, rsvp, cb);
+                }
+                else {
+                    throw err;
+                }
+            })
+            .catch(function(err) {
+                console.log('Z: Unhandled error', err);
             });
     }
 
@@ -139,7 +167,8 @@ var Zetkin = function() {
                             + '://' + _config.host + _config.base;
 
                         var reissueHeader = hawkHeader(
-                            urlBase + '/oz/reissue', 'POST', _ticket);
+                            urlBase + '/oz/reissue', 'POST', _ticket,
+                            { localtimeOffsetMsec: _offsetSec * 1000 } );
 
                         var reissueOpts = {
                             method: 'POST',
@@ -152,7 +181,7 @@ var Zetkin = function() {
                         };
 
                         return _request(reissueOpts)
-                            .then(res => {
+                            .then(function(res) {
                                 _ticket = res.data;
 
                                 // Continue request
@@ -163,19 +192,23 @@ var Zetkin = function() {
                         && err.data.message === 'Stale timestamp'
                         && numRetries < 3) {
 
+                        // TODO: This logic is duplicated in init()
+                        //       Consider a way to consolidate the two
+
                         // Reset internal clock and retry request
                         var msg = err.data.attributes;
-                        if (Hawk.client.authenticateTimestamp(msg, _ticket)) {
-                            numRetries++;
-                            return _request(options, data, meta);
-                        }
-                        else {
-                            throw err;
-                        }
+
+                        // Store offset and retry
+                        _offsetSec = msg.ts - Hawk.utils.nowSecs();
+                        numRetries++;
+                        return _request(options, data, meta);
                     }
                     else {
                         throw err;
                     }
+                })
+                .catch(function(err) {
+                    console.log('Z: Unhandled error in resource request', err);
                 });
         };
 
@@ -198,9 +231,10 @@ var Zetkin = function() {
                 + '://' + _config.host + _config.base;
 
             var uri = urlBase + options.path;
+            var header = hawkHeader(uri, options.method, _ticket,
+                { localtimeOffsetMsec: _offsetSec * 1000 });
 
-            options.headers.authorization =
-                hawkHeader(uri, options.method, _ticket).field
+            options.headers.authorization = header.field;
         }
 
         return new Promise(function(resolve, reject) {
