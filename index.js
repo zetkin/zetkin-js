@@ -35,40 +35,25 @@ var Zetkin = function() {
     }
 
 
-    // TODO: Remove these after generalizing timesync logic
-    var _this = this;
-    var _numInitRetries = 0;
-
     /**
      * Initialize Z instance so that it's ready to make API calls. Requires
      * a set of application credentials consisting of an app ID and an app key
      * as well as an RSVP token as returned by the Zetkin Platform login page.
     */
     this.init = function(appId, appKey, rsvp, cb) {
-
         var app = {
             id: appId,
             key: appKey,
             algorithm: 'sha256',
         };
 
-        var urlBase = (_config.ssl? 'https' : 'http')
-            + '://' + _config.host + _config.base;
-
-        var appHeader = hawkHeader(urlBase + '/oz/app', 'POST', app, {
-            localtimeOffsetMsec: _offsetSec * 1000 });
-
         var appOpts = {
             method: 'POST',
             path: _config.base + '/oz/app',
             json: true,
-            headers: {
-                authorization: appHeader.field,
-                'content-type': 'application/json',
-            }
         };
 
-        return _request(appOpts, null)
+        return _request(appOpts, null, null, app)
             .then(function(res) {
                 var appTicket = res.data;
 
@@ -77,21 +62,13 @@ var Zetkin = function() {
                     return cb(null);
                 }
 
-                var rsvpHeader = hawkHeader(
-                    urlBase + '/oz/rsvp', 'POST', appTicket, {
-                        localtimeOffsetMsec: _offsetSec * 1000 });
-
                 var rsvpOpts = {
                     method: 'POST',
                     path: _config.base + '/oz/rsvp',
                     json: true,
-                    headers: {
-                        authorization: rsvpHeader.field,
-                        'content-type': 'application/json',
-                    },
                 };
 
-                return _request(rsvpOpts, { rsvp: rsvp });
+                return _request(rsvpOpts, { rsvp: rsvp }, null, appTicket);
             })
             .then(function(res) {
                 _ticket = res.data;
@@ -99,27 +76,6 @@ var Zetkin = function() {
 
                 cb(_ticket);
             })
-            .catch(function(err) {
-                // TODO: This is duplicate logic
-                //       Consider a way to join with code in resource()
-                if (err.httpStatus === 401
-                    && err.data.message === 'Stale timestamp'
-                    && _numInitRetries < 5) {
-                        // Reset internal clock and retry request
-                        var msg = err.data.attributes;
-
-                        // Store offset and retry
-                        _numInitRetries++;
-                        _offsetSec = msg.ts - Hawk.utils.nowSecs();
-                        return _this.init(appId, appKey, rsvp, cb);
-                }
-                else {
-                    throw err;
-                }
-            })
-            .catch(function(err) {
-                console.log('Z: Unhandled error', err);
-            });
     }
 
     /**
@@ -145,8 +101,6 @@ var Zetkin = function() {
      * request to the /orgs/1/people resource.
     */
     this.resource = function() {
-        var numRetries = 0;
-
         path = Array.prototype.join.call(arguments, '/');
         if (path.length == 0 || path[0] != '/') {
             path = '/' + path;
@@ -154,135 +108,82 @@ var Zetkin = function() {
 
         path = _config.base + '/v' + _config.version + path;
 
-        var request = function(options, data, meta) {
-            if (data) {
-                options.headers = options.headers || {};
-                options.headers['content-type'] = 'application/json';
-            }
-
-            return _request(options, data, meta)
-                .catch(function(err) {
-                    if (err.httpStatus === 401 && err.data.expired) {
-                        var urlBase = (_config.ssl? 'https' : 'http')
-                            + '://' + _config.host + _config.base;
-
-                        var reissueHeader = hawkHeader(
-                            urlBase + '/oz/reissue', 'POST', _ticket,
-                            { localtimeOffsetMsec: _offsetSec * 1000 } );
-
-                        var reissueOpts = {
-                            method: 'POST',
-                            path: _config.base + '/oz/reissue',
-                            json: true,
-                            headers: {
-                                authorization: reissueHeader.field,
-                                'content-type': 'application/json',
-                            },
-                        };
-
-                        return _request(reissueOpts)
-                            .then(function(res) {
-                                _ticket = res.data;
-
-                                // Continue request
-                                return _request(options, data, meta);
-                            })
-                    }
-                    else if (err.httpStatus === 401
-                        && err.data.message === 'Stale timestamp'
-                        && numRetries < 3) {
-
-                        // TODO: This logic is duplicated in init()
-                        //       Consider a way to consolidate the two
-
-                        // Reset internal clock and retry request
-                        var msg = err.data.attributes;
-
-                        // Store offset and retry
-                        _offsetSec = msg.ts - Hawk.utils.nowSecs();
-                        numRetries++;
-                        return _request(options, data, meta);
-                    }
-                    else {
-                        throw err;
-                    }
-                })
-                .catch(function(err) {
-                    console.log('Z: Unhandled error in resource request', err);
-                });
-        };
-
-        return new ZetkinResourceProxy(this, path, request);
+        return new ZetkinResourceProxy(this, path, _request);
     };
 
     /**
      * Make request via HTTP or HTTPS depending on the configuration.
     */
-    var _request = function(options, data, meta) {
-        var client = _config.ssl? https : http;
-
+    var _request = function(options, data, meta, ticket) {
         options.withCredentials = false;
         options.hostname = _config.host;
         options.port = _config.port;
+        options.ssl = _config.ssl;
         options.headers = options.headers || {};
 
-        if (_ticket) {
+        if (data) {
+            options.headers['content-type'] = 'application/json';
+        }
+
+        if (ticket || _ticket) {
             var urlBase = (_config.ssl? 'https' : 'http')
                 + '://' + _config.host + _config.base;
 
+            var ticket = ticket || _ticket;
             var uri = urlBase + options.path;
-            var header = hawkHeader(uri, options.method, _ticket,
+            var header = hawkHeader(uri, options.method, ticket,
                 { localtimeOffsetMsec: _offsetSec * 1000 });
 
             options.headers.authorization = header.field;
         }
 
-        return new Promise(function(resolve, reject) {
-            req = client.request(options, function(res) {
-                var json = '';
-
-                if (res.setEncoding) {
-                    // The setEncoding() method may not exist, e.g. if running in
-                    // the browser using the Browserify abstraction layer.
-                    res.setEncoding('utf-8');
+        return requestPromise(options, data, meta)
+            .catch(function(err) {
+                // On first error, start counting retries
+                if (options.numRetries === undefined) {
+                    options.numRetries = 0;
                 }
 
-                res.on('data', function(chunk) {
-                    json += chunk;
-                });
+                if (err.httpStatus === 401 && err.data.expired) {
+                    var urlBase = (_config.ssl? 'https' : 'http')
+                        + '://' + _config.host + _config.base;
 
-                res.on('end', function() {
-                    var data = json? JSON.parse(json) : null;
+                    var reissueHeader = hawkHeader(
+                        urlBase + '/oz/reissue', 'POST', _ticket,
+                        { localtimeOffsetMsec: _offsetSec * 1000 } );
 
-                    var success = (res.statusCode >= 200 && res.statusCode < 400);
-                    if (success) {
-                        resolve({
-                            data: data,
-                            meta: meta,
-                            httpStatus: res.statusCode
-                        });
-                    }
-                    else {
-                        reject({
-                            data: data,
-                            meta: meta,
-                            httpStatus: res.statusCode
-                        });
-                    }
-                });
-            });
+                    var reissueOpts = {
+                        method: 'POST',
+                        path: _config.base + '/oz/reissue',
+                        json: true,
+                        headers: {
+                            authorization: reissueHeader.field,
+                            'content-type': 'application/json',
+                        },
+                    };
 
-            req.on('error', function(e) {
-                reject(e);
-            });
+                    return _request(reissueOpts)
+                        .then(function(res) {
+                            _ticket = res.data;
 
-            if (data) {
-                var json = JSON.stringify(data)
-                req.write(json);
-            }
+                            // Continue request
+                            return _request(options, data, meta);
+                        })
+                }
+                else if (err.httpStatus === 401
+                    && err.data.message === 'Stale timestamp'
+                    && options.numRetries < 3) {
 
-            req.end();
-        });
+                    // Reset internal clock and retry request
+                    var nowSec = Hawk.utils.nowSecs || Hawk.utils.nowSec;
+                    _offsetSec = err.data.attributes.ts - nowSec();
+                    options.numRetries++;
+                    return _request(options, data, meta);
+                }
+                else {
+                    throw err;
+                }
+            })
     };
 }
 
@@ -361,6 +262,57 @@ function hawkHeader(uri, method, ticket, options) {
     settings.dl = ticket.dlg;
 
     return Hawk.client.header(uri, method, settings);
+}
+
+function requestPromise(options, data, meta) {
+    var client = options.ssl? https : http;
+
+    return new Promise(function(resolve, reject) {
+        req = client.request(options, function(res) {
+            var json = '';
+
+            if (res.setEncoding) {
+                // The setEncoding() method may not exist, e.g. if running in
+                // the browser using the Browserify abstraction layer.
+                res.setEncoding('utf-8');
+            }
+
+            res.on('data', function(chunk) {
+                json += chunk;
+            });
+
+            res.on('end', function() {
+                var data = json? JSON.parse(json) : null;
+
+                var success = (res.statusCode >= 200 && res.statusCode < 400);
+                if (success) {
+                    resolve({
+                        data: data,
+                        meta: meta,
+                        httpStatus: res.statusCode
+                    });
+                }
+                else {
+                    reject({
+                        data: data,
+                        meta: meta,
+                        httpStatus: res.statusCode
+                    });
+                }
+            });
+        });
+
+        req.on('error', function(e) {
+            reject(e);
+        });
+
+        if (data) {
+            var json = JSON.stringify(data)
+            req.write(json);
+        }
+
+        req.end();
+    });
 }
 
 
