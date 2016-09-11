@@ -9,7 +9,8 @@ var https = require('https');
  * instances using Z.construct().
 */
 var Zetkin = function() {
-    var _ticket = null;
+    var _userTicket = null;
+    var _appTicket = null;
     var _offsetSec = 0;
     var _config = {
         base: '',
@@ -55,26 +56,31 @@ var Zetkin = function() {
 
         return _request(appOpts, null, null, app)
             .then(function(res) {
-                var appTicket = res.data;
+                _appTicket = res.data;
 
-                if (!appTicket) {
+                if (!_appTicket) {
                     // TODO: Add error to callback
                     return cb(null);
                 }
 
-                var rsvpOpts = {
-                    method: 'POST',
-                    path: _config.base + '/oz/rsvp',
-                    json: true,
-                };
+                if (rsvp) {
+                    var rsvpOpts = {
+                        method: 'POST',
+                        path: _config.base + '/oz/rsvp',
+                        json: true,
+                    };
 
-                return _request(rsvpOpts, { rsvp: rsvp }, null, appTicket);
+                    return _request(rsvpOpts, { rsvp: rsvp }, null, _appTicket);
+                }
+                else {
+                    cb(_appTicket);
+                }
             })
             .then(function(res) {
-                _ticket = res.data;
+                _userTicket = res.data;
                 _numInitRetries = 0;
 
-                cb(_ticket);
+                cb(_userTicket);
             })
     }
 
@@ -82,7 +88,7 @@ var Zetkin = function() {
      * Get the ticket used for authentication in this instance.
     */
     this.getTicket = function() {
-        return _ticket;
+        return _userTicket;
     };
 
     /**
@@ -90,7 +96,7 @@ var Zetkin = function() {
      * API. Useful when ticket is retrieved through some other means.
     */
     this.setTicket = function(ticket) {
-        _ticket = ticket;
+        _userTicket = ticket;
     };
 
     /**
@@ -125,11 +131,12 @@ var Zetkin = function() {
             options.headers['content-type'] = 'application/json';
         }
 
-        if (ticket || _ticket) {
+        // TODO: Is there ever a case for unauthenticated requests?
+        if (ticket || _userTicket || _appTicket) {
             var urlBase = (_config.ssl? 'https' : 'http')
                 + '://' + _config.host + _config.base;
 
-            var ticket = ticket || _ticket;
+            var ticket = ticket || _userTicket || _appTicket;
             var uri = urlBase + options.path;
             var header = hawkHeader(uri, options.method, ticket,
                 { localtimeOffsetMsec: _offsetSec * 1000 });
@@ -149,7 +156,7 @@ var Zetkin = function() {
                         + '://' + _config.host + _config.base;
 
                     var reissueHeader = hawkHeader(
-                        urlBase + '/oz/reissue', 'POST', _ticket,
+                        urlBase + '/oz/reissue', 'POST', _userTicket,
                         { localtimeOffsetMsec: _offsetSec * 1000 } );
 
                     var reissueOpts = {
@@ -164,7 +171,7 @@ var Zetkin = function() {
 
                     return _request(reissueOpts)
                         .then(function(res) {
-                            _ticket = res.data;
+                            _userTicket = res.data;
 
                             // Continue request
                             return _request(options, data, meta);
