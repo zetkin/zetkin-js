@@ -216,11 +216,19 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return this;
     };
 
-    this.get = function() {
+    this.get = function(page, perPage) {
         var opts = {
             method: 'GET',
-            path: path
+            path: path,
         };
+
+        if (page !== undefined) {
+            opts.path += '?p=' + page || 0;
+
+            if (perPage) {
+                opts.path += '&pp=' + perPage;
+            }
+        }
 
         return _request(opts, null, _meta);
     };
