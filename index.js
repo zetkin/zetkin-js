@@ -216,18 +216,31 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return this;
     };
 
-    this.get = function(page, perPage) {
+    this.get = function(page, perPage, filters) {
         var opts = {
             method: 'GET',
             path: path,
         };
 
-        if (page !== undefined) {
-            opts.path += '?p=' + page || 0;
+        var query = [];
+
+        if (page !== undefined && page !== null) {
+            query.push('p=' + page || 0);
 
             if (perPage) {
-                opts.path += '&pp=' + perPage;
+                query.push('pp=' + perPage);
             }
+        }
+
+        if (filters && filters.length) {
+            for (var i = 0; i < filters.length; i++) {
+                var filter = filters[i].join('');
+                query.push('filter=' + encodeURIComponent(filter));
+            }
+        }
+
+        if (query.length) {
+            opts.path += '?' + query.join('&');
         }
 
         return _request(opts, null, _meta);
