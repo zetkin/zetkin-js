@@ -5,8 +5,16 @@ const proxyquire = require('proxyquire');
 
 const Z = require('../');
 
+const MOCK_CLIENT_DEFAULTS = {
+    done: () => {},
+    validateRequestOptions: opts => true,
+    validateRequestData: data => true,
+    mockResponseStatus: 200,
+    mockResponseData: {},
+};
+
 const mockHttpClient = mockOpts => {
-    mockOpts = mockOpts || {};
+    mockOpts = Object.assign({}, MOCK_CLIENT_DEFAULTS, mockOpts);
 
     let failed = false;
     let reqOnError;
@@ -15,14 +23,12 @@ const mockHttpClient = mockOpts => {
 
     return {
         request: (options, cb) => {
-            if (mockOpts.validateRequestOptions) {
-                try {
-                    mockOpts.validateRequestOptions(options);
-                }
-                catch (err) {
-                    failed = true;
-                    mockOpts.done(err);
-                }
+            try {
+                mockOpts.validateRequestOptions(options);
+            }
+            catch (err) {
+                failed = true;
+                mockOpts.done(err);
             }
 
             return {
@@ -30,31 +36,26 @@ const mockHttpClient = mockOpts => {
                     if (ev == 'error') reqOnError = handler;
                 },
                 write: data => {
-                    if (!failed && mockOpts.validateRequestData) {
-                        try {
-                            mockOpts.validateRequestData(JSON.parse(data));
-                        }
-                        catch (err) {
-                            failed = true;
-                            mockOpts.done(err);
-                        }
+                    try {
+                        !failed && mockOpts.validateRequestData(JSON.parse(data));
+                    }
+                    catch (err) {
+                        failed = true;
+                        mockOpts.done(err);
                     }
                 },
                 end: () => {
                     process.nextTick(() => {
-                        let data = mockOpts.mockResponseData?
-                            JSON.stringify(mockOpts.mockResponseData) : '';
+                        let data = JSON.stringify(mockOpts.mockResponseData);
 
                         resOnData(data);
                         resOnEnd();
 
-                        if (!failed) {
-                            mockOpts.done();
-                        }
+                        !failed && mockOpts.done();
                     });
 
                     cb({
-                        statusCode: mockOpts.mockResponseStatus || 200,
+                        statusCode: mockOpts.mockResponseStatus,
                         on: (ev, handler) => {
                             if (ev == 'data') resOnData = handler;
                             else if (ev == 'end') resOnEnd = handler;
@@ -139,4 +140,33 @@ describe('resource proxy', () => {
             .catch(err => done(err));
     });
 
+    it('correctly throws error for non-2xx status-code', done => {
+        let Z = proxyquire('../', {
+            https: mockHttpClient({
+                mockResponseStatus: 404,
+                mockResponseData: {
+                    title: 'error title',
+                    description: 'error description',
+                },
+            }),
+        });
+
+        Z.resource('users', 'me')
+            .get()
+            .then(res => {
+                assert.fail('Request succeeded unexpectedly');
+            })
+            .catch(err => {
+                assert.deepEqual(err, {
+                    meta: {},
+                    httpStatus: 404,
+                    data: {
+                        title: 'error title',
+                        description: 'error description',
+                    },
+                });
+                done();
+            })
+            .catch(err => done(err));
+    });
 });
