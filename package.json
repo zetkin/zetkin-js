@@ -4,7 +4,7 @@
   "description": "Javascript SDK for the Zetkin platform for organizing activism",
   "main": "index.js",
   "scripts": {
-    "test": "mocha $(find test -name '*.js')"
+    "test": "nyc --reporter=html --reporter=text mocha $(find test -name '*.js')"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
   "homepage": "https://github.com/zetkin/zetkin-js",
   "devDependencies": {
     "mocha": "^4.0.1",
+    "nyc": "^11.3.0",
     "proxyquire": "^1.8.0"
   },
   "dependencies": {
