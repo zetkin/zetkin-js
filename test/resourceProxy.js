@@ -46,10 +46,15 @@ const mockHttpClient = mockOpts => {
                 },
                 end: () => {
                     process.nextTick(() => {
-                        let data = JSON.stringify(mockOpts.mockResponseData);
+                        if (mockOpts.mockError) {
+                            reqOnError(mockOpts.mockError);
+                        }
+                        else {
+                            let data = JSON.stringify(mockOpts.mockResponseData);
 
-                        resOnData(data);
-                        resOnEnd();
+                            resOnData(data);
+                            resOnEnd();
+                        }
 
                         !failed && mockOpts.done();
                     });
@@ -165,6 +170,28 @@ describe('resource proxy', () => {
                         description: 'error description',
                     },
                 });
+                done();
+            })
+            .catch(err => done(err));
+    });
+
+    it('correctly throws error for non-HTTP error', done=> {
+        let Z = proxyquire('../', {
+            https: mockHttpClient({
+                mockError: { isMockError: true },
+            }),
+        });
+
+        Z.resource('users', 'me')
+            .get()
+            .then(res => {
+                assert.fail('Request succeeded unexpectedly');
+            })
+            .catch(err => {
+                assert.deepEqual(err, {
+                    isMockError: true,
+                });
+
                 done();
             })
             .catch(err => done(err));
