@@ -207,14 +207,22 @@ var ZetkinResourceProxy = function(z, path, _request) {
     };
 
     this.meta = function(keyOrObj, valueIfAny) {
-        if (arguments.length == 2) {
-            _meta[keyOrObj] = valueIfAny;
+        if (keyOrObj == null) {
+            throw new Error(
+                'Invalid meta() signature: Pass key and value or object');
         }
-        else {
+        else if (arguments.length == 1 && typeof keyOrObj == 'object') {
             var key;
             for (key in keyOrObj) {
                 _meta[key] = keyOrObj[key];
             }
+        }
+        else if (arguments.length == 2) {
+            _meta[keyOrObj] = valueIfAny;
+        }
+        else {
+            throw new Error(
+                'Invalid meta() signature: Pass key and value or object');
         }
 
         return this;
