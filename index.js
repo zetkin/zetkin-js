@@ -21,6 +21,10 @@ var Zetkin = function() {
     }
 
     this.configure = function(options) {
+        if (!options) {
+            throw new Error('Options may not be undefined');
+        }
+
         for (var key in options) {
             if (key in _config) {
                 _config[key] = options[key];
