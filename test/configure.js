@@ -8,10 +8,10 @@ const mockHttpClient = require('./helpers').mockHttpClient;
 
 describe('configure()', () => {
     it('accepts known properties', () => {
-        let Z = require('../');
+        let z = require('../').construct();
 
         assert.doesNotThrow(() => {
-            Z.configure({
+            z.configure({
                 host: 'api.dev.zetkin.org',
                 version: 1,
                 ssl: false,
@@ -19,26 +19,42 @@ describe('configure()', () => {
         });
     });
 
+    it('stores and returns config through getConfig()', () => {
+        let z = require('../').construct();
+
+        z.configure({
+            host: 'api.dev.zetkin.org',
+            version: 1857,
+            ssl: false,
+        });
+
+        let config = z.getConfig();
+
+        assert.equal(config.host, 'api.dev.zetkin.org');
+        assert.equal(config.version, 1857);
+        assert.equal(config.ssl, false);
+    });
+
     it('throws error when invoked without properties', () => {
-        let Z = require('../');
+        let z = require('../').construct();
 
         assert.throws(() => {
-            Z.configure();
+            z.configure();
         }, /Options may not be undefined/);
     });
 
     it('throws error for unknown property', () => {
-        let Z = require('../');
+        let z = require('../');
 
         assert.throws(() => {
-            Z.configure({
+            z.configure({
                 foo: 'value',
             });
         }, /Unknown config option: foo/);
     });
 
     it('respects domain setting when making requests', done => {
-        let Z = proxyquire('../', {
+        let z = proxyquire('../', {
             https: mockHttpClient({
                 validateRequestCount: 1,
                 done: done,
@@ -46,47 +62,47 @@ describe('configure()', () => {
                     assert.equal(opts.hostname, 'api.dummy.zetkin.org');
                 },
             }),
-        });
+        }).construct();
 
-        Z.configure({
+        z.configure({
             host: 'api.dummy.zetkin.org',
         });
 
-        Z.resource('org', 1, 'campaigns')
+        z.resource('org', 1, 'campaigns')
             .get()
             .catch(err => done(err));
     });
 
     it('defaults to TLS=true when making requests', done => {
-        let Z = proxyquire('../', {
+        let z = proxyquire('../', {
             http: mockHttpClient({
                 done: () => done('Expected HTTPS but used HTTP'),
             }),
             https: mockHttpClient({
                 done: done,
             }),
-        });
+        }).construct();
 
-        Z.resource('org', 1, 'campaigns')
+        z.resource('org', 1, 'campaigns')
             .get()
             .catch(err => done(err));
     });
 
     it('respects TLS=false when making requests', done => {
-        let Z = proxyquire('../', {
+        let z = proxyquire('../', {
             http: mockHttpClient({
                 done: done,
             }),
             https: mockHttpClient({
                 done: () => done('Expected HTTP but used HTTPS'),
             }),
-        });
+        }).construct();
 
-        Z.configure({
+        z.configure({
             ssl: false,
         });
 
-        Z.resource('org', 1, 'campaigns')
+        z.resource('org', 1, 'campaigns')
             .get()
             .catch(err => done(err));
     });
