@@ -21,6 +21,10 @@ var Zetkin = function() {
     }
 
     this.configure = function(options) {
+        if (!options) {
+            throw new Error('Options may not be undefined');
+        }
+
         for (var key in options) {
             if (key in _config) {
                 _config[key] = options[key];
@@ -203,14 +207,22 @@ var ZetkinResourceProxy = function(z, path, _request) {
     };
 
     this.meta = function(keyOrObj, valueIfAny) {
-        if (arguments.length == 2) {
-            _meta[keyOrObj] = valueIfAny;
+        if (keyOrObj == null) {
+            throw new Error(
+                'Invalid meta() signature: Pass key and value or object');
         }
-        else {
+        else if (arguments.length == 1 && typeof keyOrObj == 'object') {
             var key;
             for (key in keyOrObj) {
                 _meta[key] = keyOrObj[key];
             }
+        }
+        else if (arguments.length == 2) {
+            _meta[keyOrObj] = valueIfAny;
+        }
+        else {
+            throw new Error(
+                'Invalid meta() signature: Pass key and value or object');
         }
 
         return this;
@@ -232,10 +244,20 @@ var ZetkinResourceProxy = function(z, path, _request) {
             }
         }
 
-        if (filters && filters.length) {
-            for (var i = 0; i < filters.length; i++) {
-                var filter = filters[i].join('');
-                query.push('filter=' + encodeURIComponent(filter));
+        if (filters) {
+            if (filters.length) {
+                for (var i = 0; i < filters.length; i++) {
+                    if (filters[i].length !== 3) {
+                        throw new Error(
+                            'get() filters should be array of triplets');
+                    }
+
+                    var filter = filters[i].join('');
+                    query.push('filter=' + encodeURIComponent(filter));
+                }
+            }
+            else {
+                throw new Error('get() filters should be array of triplets');
             }
         }
 
@@ -349,7 +371,7 @@ var Z = new Zetkin()
 Z.construct = function(instanceOptions) {
     zetkin = new Zetkin();
     zetkin.configure(Z.getConfig());
-    zetkin.configure(instanceOptions);
+    zetkin.configure(instanceOptions || {});
     return zetkin;
 }
 
