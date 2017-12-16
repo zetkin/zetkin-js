@@ -244,10 +244,20 @@ var ZetkinResourceProxy = function(z, path, _request) {
             }
         }
 
-        if (filters && filters.length) {
-            for (var i = 0; i < filters.length; i++) {
-                var filter = filters[i].join('');
-                query.push('filter=' + encodeURIComponent(filter));
+        if (filters) {
+            if (filters.length) {
+                for (var i = 0; i < filters.length; i++) {
+                    if (filters[i].length !== 3) {
+                        throw new Error(
+                            'get() filters should be array of triplets');
+                    }
+
+                    var filter = filters[i].join('');
+                    query.push('filter=' + encodeURIComponent(filter));
+                }
+            }
+            else {
+                throw new Error('get() filters should be array of triplets');
             }
         }
 
