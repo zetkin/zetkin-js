@@ -77,6 +77,22 @@ describe('resource proxy', () => {
             .catch(err => done(err));
     });
 
+    it('put() makes correct request', done => {
+        let Z = proxyquire('../', {
+            https: mockHttpClient({
+                done: done,
+                validateRequestOptions: opts => {
+                    assert.equal(opts.method, 'PUT');
+                    assert.equal(opts.path, '/v1/users/me');
+                },
+            }),
+        });
+
+        Z.resource('users', 'me')
+            .put()
+            .catch(err => done(err));
+    });
+
     it('correctly throws error for non-2xx status-code', done => {
         let Z = proxyquire('../', {
             https: mockHttpClient({
