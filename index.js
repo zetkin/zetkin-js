@@ -13,6 +13,12 @@ var Zetkin = function() {
     var _appTicket = null;
     var _offsetSec = 0;
     var _config = {
+        clientId: null,
+        clientSecret: null,
+        redirectUri: null,
+        accessTokenUri: 'http://api.zetk.in/oauth/token/',
+        authorizationUri: 'http://api.zetk.in/oauth/authorize/',
+        scopes: [],
         base: '',
         version: 1,
         ssl: true,
