@@ -2,6 +2,7 @@ var Hawk = require('hawk');
 var Hoek = require('hoek');
 var http = require('http');
 var https = require('https');
+var ClientOAuth2 = require('client-oauth2')
 
 
 /**
@@ -12,6 +13,7 @@ var Zetkin = function() {
     var _userTicket = null;
     var _appTicket = null;
     var _offsetSec = 0;
+    var _client = null;
     var _config = {
         clientId: null,
         clientSecret: null,
@@ -38,6 +40,17 @@ var Zetkin = function() {
             else {
                 throw new TypeError('Unknown config option: ' + key);
             }
+        }
+
+        if (_config.clientId) {
+            _client = new ClientOAuth2({
+                clientId: _config.clientId,
+                clientSecret: _config.clientSecret,
+                accessTokenUri: _config.accessTokenUri,
+                authorizationUri: _config.authorizationUri,
+                redirectUri: _config.redirectUri,
+                scopes: [],
+            });
         }
     }
 
@@ -94,20 +107,15 @@ var Zetkin = function() {
             })
     }
 
-    /**
-     * Get the ticket used for authentication in this instance.
-    */
-    this.getTicket = function() {
-        return _userTicket;
-    };
-
-    /**
-     * Explicitly set a ticket without making an authentication request to the
-     * API. Useful when ticket is retrieved through some other means.
-    */
-    this.setTicket = function(ticket) {
-        _userTicket = ticket;
-    };
+    this.getLoginUrl = function() {
+        if (_client) {
+            return _config.clientSecret?
+                _client.code.getUri() : _client.token.getUri();
+        }
+        else {
+            throw new Error('SDK client not configured');
+        }
+    }
 
     /**
      * Retrieve a resource proxy through which requests to that resource can be

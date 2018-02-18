@@ -29,7 +29,6 @@
     "proxyquire": "^1.8.0"
   },
   "dependencies": {
-    "hawk": "^6.0.0",
-    "hoek": "^4.0.2"
+    "client-oauth2": "^4.1.0"
   }
 }
