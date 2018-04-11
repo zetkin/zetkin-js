@@ -25,6 +25,13 @@ describe('get() filters', () => {
         });
     });
 
+    it('accepts an empty array', () => {
+        assert.doesNotThrow(() => {
+            Z.resource('session')
+                .get(null, null, []);
+        });
+    });
+
     it('throws error for array of non-triplets', () => {
         assert.throws(() => {
             Z.resource('session')

@@ -245,7 +245,7 @@ var ZetkinResourceProxy = function(z, path, _request) {
         }
 
         if (filters) {
-            if (filters.length) {
+            if (filters.length >= 0) {
                 for (var i = 0; i < filters.length; i++) {
                     if (filters[i].length !== 3) {
                         throw new Error(
