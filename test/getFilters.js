@@ -11,7 +11,8 @@ describe('get() filters', () => {
     it('accepts null', () => {
         assert.doesNotThrow(() => {
             Z.resource('session')
-                .get(null, null, null);
+                .get(null, null, null)
+                .catch(err => {});
         });
     });
 
@@ -22,6 +23,7 @@ describe('get() filters', () => {
                     ['param1', '==', 1],
                     ['param2', '==', 2],
                 ])
+                .catch(err => {});
         });
     });
 

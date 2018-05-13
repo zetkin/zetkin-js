@@ -58,63 +58,32 @@ var Zetkin = function() {
         return _config;
     }
 
-
-    /**
-     * Initialize Z instance so that it's ready to make API calls. Requires
-     * a set of application credentials consisting of an app ID and an app key
-     * as well as an RSVP token as returned by the Zetkin Platform login page.
-    */
-    this.init = function(appId, appKey, rsvp, cb) {
-        var app = {
-            id: appId,
-            key: appKey,
-            algorithm: 'sha256',
-        };
-
-        var appOpts = {
-            method: 'POST',
-            path: _config.base + '/oz/app',
-            json: true,
-        };
-
-        return _request(appOpts, null, null, app)
-            .then(function(res) {
-                _appTicket = res.data;
-
-                if (!_appTicket) {
-                    // TODO: Add error to callback
-                    return cb(null);
-                }
-
-                if (rsvp) {
-                    var rsvpOpts = {
-                        method: 'POST',
-                        path: _config.base + '/oz/rsvp',
-                        json: true,
-                    };
-
-                    return _request(rsvpOpts, { rsvp: rsvp }, null, _appTicket);
-                }
-                else {
-                    cb(_appTicket);
-                }
-            })
-            .then(function(res) {
-                _userTicket = res.data;
-                _numInitRetries = 0;
-
-                cb(_userTicket);
-            })
-    }
-
-    this.getLoginUrl = function() {
+    function _validateClientConfiguration() {
         if (_client) {
-            return _config.clientSecret?
-                _client.code.getUri() : _client.token.getUri();
+            return true;
         }
         else {
             throw new Error('SDK client not configured');
         }
+    }
+
+    this.getLoginUrl = function() {
+        _validateClientConfiguration();
+        return _config.clientSecret?
+            _client.code.getUri() : _client.token.getUri();
+    }
+
+    this.authenticate = function(url) {
+        if (!url) {
+            throw new Error('Missing authentication redirect URL');
+        }
+
+        _validateClientConfiguration();
+
+        var promise = _config.clientSecret?
+            _client.code.getToken(url) : _client.token.getToken(url);
+
+        return promise;
     }
 
     /**
