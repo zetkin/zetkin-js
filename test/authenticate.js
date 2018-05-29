@@ -59,4 +59,30 @@ describe('authenticate()', () => {
         z.configure({ clientId: 'abc123', clientSecret: 'abc123' });
         z.authenticate(VALID_CODE_URL);
     });
+
+    it('correctly signs request with token', () => {
+        const DUMMY_TOKEN = {
+            sign: options => {
+                return Object.assign(options, { mockSigned: true });
+            },
+        };
+
+        let z = proxyquire('../', {
+            'client-oauth2': function() {
+                this.code = {
+                    getToken: url => Promise.resolve(DUMMY_TOKEN),
+                };
+            },
+            'https': mockHttpClient({
+                validateRequestOptions: opts => {
+                    assert(opts.mockSigned);
+                },
+            }),
+        });
+
+        z.configure({ clientId: 'abc123', clientSecret: 'abc123' });
+
+        return z.authenticate(VALID_CODE_URL)
+            .then(() => z.resource('/orgs').get())
+    });
 });

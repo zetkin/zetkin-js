@@ -10,8 +10,7 @@ var ClientOAuth2 = require('client-oauth2')
  * instances using Z.construct().
 */
 var Zetkin = function() {
-    var _userTicket = null;
-    var _appTicket = null;
+    var _token = null;
     var _offsetSec = 0;
     var _client = null;
     var _config = {
@@ -83,7 +82,8 @@ var Zetkin = function() {
         var promise = _config.clientSecret?
             _client.code.getToken(url) : _client.token.getToken(url);
 
-        return promise;
+        return promise
+            .then(token => _token = token);
     }
 
     /**
@@ -118,66 +118,11 @@ var Zetkin = function() {
             options.headers['content-type'] = 'application/json';
         }
 
-        // TODO: Is there ever a case for unauthenticated requests?
-        if (ticket || _userTicket || _appTicket) {
-            var urlBase = (_config.ssl? 'https' : 'http')
-                + '://' + _config.host + _config.base;
-
-            var ticket = ticket || _userTicket || _appTicket;
-            var uri = urlBase + options.path;
-            var header = hawkHeader(uri, options.method, ticket,
-                { localtimeOffsetMsec: _offsetSec * 1000 });
-
-            options.headers.authorization = header.field;
+        if (_token) {
+            _token.sign(options);
         }
 
-        return requestPromise(options, data, meta)
-            .catch(function(err) {
-                // On first error, start counting retries
-                if (options.numRetries === undefined) {
-                    options.numRetries = 0;
-                }
-
-                if (err.httpStatus === 401 && err.data.expired) {
-                    var urlBase = (_config.ssl? 'https' : 'http')
-                        + '://' + _config.host + _config.base;
-
-                    var reissueHeader = hawkHeader(
-                        urlBase + '/oz/reissue', 'POST', _userTicket,
-                        { localtimeOffsetMsec: _offsetSec * 1000 } );
-
-                    var reissueOpts = {
-                        method: 'POST',
-                        path: _config.base + '/oz/reissue',
-                        json: true,
-                        headers: {
-                            authorization: reissueHeader.field,
-                            'content-type': 'application/json',
-                        },
-                    };
-
-                    return _request(reissueOpts)
-                        .then(function(res) {
-                            _userTicket = res.data;
-
-                            // Continue request
-                            return _request(options, data, meta);
-                        })
-                }
-                else if (err.httpStatus === 401
-                    && err.data.message === 'Stale timestamp'
-                    && options.numRetries < 3) {
-
-                    // Reset internal clock and retry request
-                    var nowSec = Hawk.utils.nowSecs || Hawk.utils.nowSec;
-                    _offsetSec = err.data.attributes.ts - nowSec();
-                    options.numRetries++;
-                    return _request(options, data, meta);
-                }
-                else {
-                    throw err;
-                }
-            })
+        return requestPromise(options, data, meta);
     };
 }
 
@@ -287,15 +232,6 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return _request(opts, data, _meta);
     };
 };
-
-function hawkHeader(uri, method, ticket, options) {
-    var settings = Hoek.shallow(options || {});
-    settings.credentials = ticket;
-    settings.app = ticket.app;
-    settings.dl = ticket.dlg;
-
-    return Hawk.client.header(uri, method, settings);
-}
 
 function requestPromise(options, data, meta) {
     var client = options.ssl? https : http;
