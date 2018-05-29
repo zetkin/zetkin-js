@@ -24,7 +24,7 @@ var Zetkin = function() {
         version: 1,
         ssl: true,
         host: 'api.zetk.in',
-        port: 443
+        port: undefined,
     }
 
     this.configure = function(options) {
@@ -110,7 +110,7 @@ var Zetkin = function() {
     var _request = function(options, data, meta, ticket) {
         options.withCredentials = false;
         options.hostname = _config.host;
-        options.port = _config.port;
+        options.port = _config.port || (_config.ssl? 443 : 80);
         options.ssl = _config.ssl;
         options.headers = options.headers || {};
 
