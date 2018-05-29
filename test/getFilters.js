@@ -49,7 +49,7 @@ describe('get() filters', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.path,
-                        '/v1/session?filter=param1%3D%3D1');
+                        '/session?filter=param1%3D%3D1');
                 },
             }),
         });
@@ -66,7 +66,7 @@ describe('get() filters', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.path,
-                        '/v1/session?filter=param1%3D%3D1&filter=param2%3D%3D2');
+                        '/session?filter=param1%3D%3D1&filter=param2%3D%3D2');
                 },
             }),
         });

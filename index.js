@@ -99,7 +99,7 @@ var Zetkin = function() {
             path = '/' + path;
         }
 
-        path = _config.base + '/v' + _config.version + path;
+        path = _config.base + path;
 
         return new ZetkinResourceProxy(this, path, _request);
     };
