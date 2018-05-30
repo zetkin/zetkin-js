@@ -1,5 +1,4 @@
-var Hawk = require('hawk');
-var Hoek = require('hoek');
+var url = require('url');
 var http = require('http');
 var https = require('https');
 var ClientOAuth2 = require('client-oauth2')
@@ -19,13 +18,14 @@ var Zetkin = function() {
         clientId: null,
         clientSecret: null,
         redirectUri: null,
-        accessTokenUri: 'http://api.zetk.in/oauth/token/',
-        authorizationUri: 'http://api.zetk.in/oauth/authorize/',
+        zetkinDomain: 'zetk.in',
+        accessTokenUri: 'http://api.{ZETKIN_DOMAIN}/oauth/token/',
+        authorizationUri: 'http://api.{ZETKIN_DOMAIN}/oauth/authorize/',
         scopes: [],
         base: '',
         version: 1,
         ssl: true,
-        host: 'api.zetk.in',
+        host: 'api.{ZETKIN_DOMAIN}',
         port: undefined,
     }
 
@@ -47,8 +47,10 @@ var Zetkin = function() {
             _client = new ClientOAuth2({
                 clientId: _config.clientId,
                 clientSecret: _config.clientSecret,
-                accessTokenUri: _config.accessTokenUri,
-                authorizationUri: _config.authorizationUri,
+                accessTokenUri: _config.accessTokenUri
+                    .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
+                authorizationUri: _config.authorizationUri
+                    .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
                 redirectUri: _config.redirectUri,
                 scopes: [],
             });
@@ -133,7 +135,7 @@ var Zetkin = function() {
     */
     var _request = function(options, data, meta, ticket) {
         options.withCredentials = false;
-        options.hostname = _config.host;
+        options.hostname = _config.host.replace('{ZETKIN_DOMAIN}', _config.zetkinDomain);
         options.port = _config.port || (_config.ssl? 443 : 80);
         options.ssl = _config.ssl;
         options.headers = options.headers || {};
