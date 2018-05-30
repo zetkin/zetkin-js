@@ -12,6 +12,12 @@ describe('configure()', () => {
 
         assert.doesNotThrow(() => {
             z.configure({
+                clientId: 'abc123',
+                clientSecret: '123abc',
+                accessTokenUri: 'http://api.dev.zetkin.org/oauth/token/',
+                authorizationUri: 'http://api.dev.zetkin.org/oauth/authorize/',
+                redirectUri: 'http://www.dev.zetkin.org/oauth/',
+                scopes: [],
                 host: 'api.dev.zetkin.org',
                 version: 1,
                 ssl: false,

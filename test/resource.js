@@ -17,11 +17,11 @@ describe('resource()', () => {
 
     it('creates a resource proxy with the right path', () => {
         let r = Z.resource('/users/me');
-        assert.equal(r.getPath(), '/v1/users/me');
+        assert.equal(r.getPath(), '/users/me');
     });
 
     it('generates the correct path from components', () => {
         let r = Z.resource('users', 'me');
-        assert.equal(r.getPath(), '/v1/users/me');
+        assert.equal(r.getPath(), '/users/me');
     });
 });

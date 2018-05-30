@@ -1,21 +1,32 @@
 # Zetkin javascript SDK
 This is the javascript SDK for the Zetkin Platform for organizing activism. Use
-it to build applications on top of the Zetkin Platform. The SDK can be used in the browser (via Browserify) as well as in Node.
+it to build applications on top of the Zetkin Platform. The SDK can be used in
+the browser (via Browserify) as well as in Node.
 
 ## At a glance
 ```javascript
-Z.init(appId, appKey, rsvp)
-  .then(function(res) {
-    // Successfully initialized
-    Z.resource('/users/me').get()
-      .then(function(res) {
+Z.configure({
+    clientId: 'my-client-id', // Contact Zetkin Foundation to get one
+    clientSecret: 'my-client-secret',
+});
+
+// Get login URL and supply URL to redirect to after login
+console.log(Z.getLoginUrl('http://example.com/restricted'));
+
+// After logging in, back at example.com/restricted, with
+// Express or other node-based HTTP framework
+const callbackUrl = url.format({
+    protocol: req.protocol,
+    host: req.get('host'),
+    pathname: req.path,
+    query: req.query,
+});
+
+Z.authenticate(callbackUrl)
+    .then(() => Z.resource('/users/me').get())
+    .then(res => {
         console.log(res.data);
-      })
-      .catch(function(err) {
-        console.log('error! ' + err.httpStatus);
-        console.log(err.data);
-      });
-  });
+    });
 ```
 
 ## Installation
@@ -26,18 +37,25 @@ npm install zetkin
 ```
 
 ## Authentication
-To authenticate with the Zetkin Platform API, the user must be redirected to
-login.zetk.in, and will return with an RSVP token. Use your application
-credentials and that token to initialize the SDK.
+The Zetkin API uses OAuth 2.0. That means that the user must be redirected to
+login.zetk.in, and will return with an OAuth2 code provided in the URL. Use that
+code (or in fact the entire URL) to authenticate the SDK.
 
-The SDK will exchange the RSVP token for a ticket and then manage the ticket
-lifecycle transparently.
+The SDK will exchange the code for a token and then manage the token lifecycle
+transparently.
 
 ```javascript
-Z.init(myAppId, myAppKey, rsvpFromLogin)
-    .then(ticket => {
-        // You can ignore ticket, which is used internally
-        console.log('Got ticket', ticket);
+const callbackUrl = url.format({
+    protocol: req.protocol,
+    host: req.get('host'),
+    pathname: req.path,
+    query: req.query,
+});
+
+Z.authenticate(callbackUrl)
+    .then(token => {
+        // We get the token here, but we don't need to do anything with it since
+        // the SDK will manage it internally.
     });
 ```
 
@@ -137,14 +155,17 @@ The `configure()` function allows some options to be reconfigured from their usu
 
 ```javascript
 Z.configure({
-  host: 'api.dev.zetk.in',
+  zetkinDomain: 'dev.zetkin.org',
   ssl: false
 });
 ```
-The available options are:
-* `base`: the base path, or path prefix, on the server. The default is no prefix (empty string).
-* `host`: the hostname of the Zetkin Platform API server. The default is _api.zetk.in_.
-* `port`: the port on which the API listens. The default is _443_.
+The options you might want to use are:
+* `clientId`: Your client ID, as registered with Zetkin Foundation.
+* `clientSecret`: Your client secret, as registered with Zetkin Foundation.
+* `redirectUri`: The URI to which the user should be redirected after logging in. Can also be supplied to `getLoginUrl()`.
+* `zetkinDomain`: The Zetkin domain. The default is api.zetk.in, but if you are developing Zetkin, you might want to use dev.zetkin.org.
+* `host`: the host on which to connect with the API. The default is api.zetk.in.
+* `port`: the port on which to connect with the API. The default is _443_ (or 80 if `ssl` is `false`)
 * `ssl`: Whether to connect using HTTPS (true) or HTTP (false). The default is _true_, i.e. to connect securely using HTTPS.
 
 ### Running multiple instances
@@ -164,10 +185,12 @@ As a convenience, a `config` object can be passed to the `construct()` function 
 
 ```javascript
 var DevZ = Z.construct({
-  host: 'api.dev.zetk.in',
   ssl: false
 });
 ```
 
 ## Contributing
-If you want to contribute to the Zetkin Javascript SDK, make a fork and use `npm install` to install the dependencies. Make your changes, make sure that they are properly tested and that all tests pass by running `npm test`, and then make a pull request back to the master branch of this repository.
+If you want to contribute to the Zetkin Javascript SDK, make a fork and use
+`npm install` to install the dependencies. Make your changes, make sure that
+they are properly tested and that all tests pass by running `npm test`, and
+then make a pull request back to the master branch of this repository.

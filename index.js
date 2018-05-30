@@ -1,7 +1,9 @@
-var Hawk = require('hawk');
-var Hoek = require('hoek');
+var url = require('url');
 var http = require('http');
 var https = require('https');
+var ClientOAuth2 = require('client-oauth2')
+var atob = require('atob');
+var btoa = require('btoa');
 
 
 /**
@@ -9,15 +11,22 @@ var https = require('https');
  * instances using Z.construct().
 */
 var Zetkin = function() {
-    var _userTicket = null;
-    var _appTicket = null;
+    var _token = null;
     var _offsetSec = 0;
+    var _client = null;
     var _config = {
+        clientId: null,
+        clientSecret: null,
+        redirectUri: null,
+        zetkinDomain: 'zetk.in',
+        accessTokenUri: 'http://api.{ZETKIN_DOMAIN}/oauth/token/',
+        authorizationUri: 'http://api.{ZETKIN_DOMAIN}/oauth/authorize/',
+        scopes: [],
         base: '',
         version: 1,
         ssl: true,
-        host: 'api.zetk.in',
-        port: 443
+        host: 'api.{ZETKIN_DOMAIN}',
+        port: undefined,
     }
 
     this.configure = function(options) {
@@ -33,75 +42,89 @@ var Zetkin = function() {
                 throw new TypeError('Unknown config option: ' + key);
             }
         }
+
+        if (_config.clientId) {
+            _client = new ClientOAuth2({
+                clientId: _config.clientId,
+                clientSecret: _config.clientSecret,
+                accessTokenUri: _config.accessTokenUri
+                    .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
+                authorizationUri: _config.authorizationUri
+                    .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
+                redirectUri: _config.redirectUri,
+                scopes: [],
+            });
+        }
     }
 
     this.getConfig = function() {
         return _config;
     }
 
-
-    /**
-     * Initialize Z instance so that it's ready to make API calls. Requires
-     * a set of application credentials consisting of an app ID and an app key
-     * as well as an RSVP token as returned by the Zetkin Platform login page.
-    */
-    this.init = function(appId, appKey, rsvp, cb) {
-        var app = {
-            id: appId,
-            key: appKey,
-            algorithm: 'sha256',
-        };
-
-        var appOpts = {
-            method: 'POST',
-            path: _config.base + '/oz/app',
-            json: true,
-        };
-
-        return _request(appOpts, null, null, app)
-            .then(function(res) {
-                _appTicket = res.data;
-
-                if (!_appTicket) {
-                    // TODO: Add error to callback
-                    return cb(null);
-                }
-
-                if (rsvp) {
-                    var rsvpOpts = {
-                        method: 'POST',
-                        path: _config.base + '/oz/rsvp',
-                        json: true,
-                    };
-
-                    return _request(rsvpOpts, { rsvp: rsvp }, null, _appTicket);
-                }
-                else {
-                    cb(_appTicket);
-                }
-            })
-            .then(function(res) {
-                _userTicket = res.data;
-                _numInitRetries = 0;
-
-                cb(_userTicket);
-            })
+    function _validateClientConfiguration() {
+        if (_client) {
+            return true;
+        }
+        else {
+            throw new Error('SDK client not configured');
+        }
     }
 
-    /**
-     * Get the ticket used for authentication in this instance.
-    */
-    this.getTicket = function() {
-        return _userTicket;
-    };
+    this.setToken = function(token) {
+        _validateClientConfiguration();
 
-    /**
-     * Explicitly set a ticket without making an authentication request to the
-     * API. Useful when ticket is retrieved through some other means.
-    */
-    this.setTicket = function(ticket) {
-        _userTicket = ticket;
-    };
+        try {
+            var data = JSON.parse(atob(token));
+        }
+        catch (err) {
+            throw new Error('Malformed token');
+        }
+
+        _token = _client.createToken(data);
+    }
+
+    this.getToken = function() {
+        _validateClientConfiguration();
+        if (_token) {
+            return btoa(JSON.stringify(_token.data));
+        }
+
+        return null;
+    }
+
+    this.getLoginUrl = function(redirectUri) {
+        _validateClientConfiguration();
+
+        var opts = {
+            redirectUri: redirectUri,
+        };
+
+        return _config.clientSecret?
+            _client.code.getUri(opts) : _client.token.getUri(opts);
+    }
+
+    this.authenticate = function(uri) {
+        if (!uri) {
+            throw new Error('Missing authentication redirect URL');
+        }
+
+        _validateClientConfiguration();
+
+        // Remove code from URL (what's left should be redirect URL)
+        var uriObj = url.parse(uri, true);
+        delete uriObj.query.code;
+        delete uriObj.search;
+
+        var opts = {
+            redirectUri: url.format(uriObj),
+        };
+
+        var promise = _config.clientSecret?
+            _client.code.getToken(uri, opts) : _client.token.getToken(uri, opts);
+
+        return promise
+            .then(token => _token = token);
+    }
 
     /**
      * Retrieve a resource proxy through which requests to that resource can be
@@ -116,7 +139,7 @@ var Zetkin = function() {
             path = '/' + path;
         }
 
-        path = _config.base + '/v' + _config.version + path;
+        path = _config.base + path;
 
         return new ZetkinResourceProxy(this, path, _request);
     };
@@ -126,8 +149,8 @@ var Zetkin = function() {
     */
     var _request = function(options, data, meta, ticket) {
         options.withCredentials = false;
-        options.hostname = _config.host;
-        options.port = _config.port;
+        options.hostname = _config.host.replace('{ZETKIN_DOMAIN}', _config.zetkinDomain);
+        options.port = _config.port || (_config.ssl? 443 : 80);
         options.ssl = _config.ssl;
         options.headers = options.headers || {};
 
@@ -135,66 +158,11 @@ var Zetkin = function() {
             options.headers['content-type'] = 'application/json';
         }
 
-        // TODO: Is there ever a case for unauthenticated requests?
-        if (ticket || _userTicket || _appTicket) {
-            var urlBase = (_config.ssl? 'https' : 'http')
-                + '://' + _config.host + _config.base;
-
-            var ticket = ticket || _userTicket || _appTicket;
-            var uri = urlBase + options.path;
-            var header = hawkHeader(uri, options.method, ticket,
-                { localtimeOffsetMsec: _offsetSec * 1000 });
-
-            options.headers.authorization = header.field;
+        if (_token) {
+            _token.sign(options);
         }
 
-        return requestPromise(options, data, meta)
-            .catch(function(err) {
-                // On first error, start counting retries
-                if (options.numRetries === undefined) {
-                    options.numRetries = 0;
-                }
-
-                if (err.httpStatus === 401 && err.data.expired) {
-                    var urlBase = (_config.ssl? 'https' : 'http')
-                        + '://' + _config.host + _config.base;
-
-                    var reissueHeader = hawkHeader(
-                        urlBase + '/oz/reissue', 'POST', _userTicket,
-                        { localtimeOffsetMsec: _offsetSec * 1000 } );
-
-                    var reissueOpts = {
-                        method: 'POST',
-                        path: _config.base + '/oz/reissue',
-                        json: true,
-                        headers: {
-                            authorization: reissueHeader.field,
-                            'content-type': 'application/json',
-                        },
-                    };
-
-                    return _request(reissueOpts)
-                        .then(function(res) {
-                            _userTicket = res.data;
-
-                            // Continue request
-                            return _request(options, data, meta);
-                        })
-                }
-                else if (err.httpStatus === 401
-                    && err.data.message === 'Stale timestamp'
-                    && options.numRetries < 3) {
-
-                    // Reset internal clock and retry request
-                    var nowSec = Hawk.utils.nowSecs || Hawk.utils.nowSec;
-                    _offsetSec = err.data.attributes.ts - nowSec();
-                    options.numRetries++;
-                    return _request(options, data, meta);
-                }
-                else {
-                    throw err;
-                }
-            })
+        return requestPromise(options, data, meta);
     };
 }
 
@@ -304,15 +272,6 @@ var ZetkinResourceProxy = function(z, path, _request) {
         return _request(opts, data, _meta);
     };
 };
-
-function hawkHeader(uri, method, ticket, options) {
-    var settings = Hoek.shallow(options || {});
-    settings.credentials = ticket;
-    settings.app = ticket.app;
-    settings.dl = ticket.dlg;
-
-    return Hawk.client.header(uri, method, settings);
-}
 
 function requestPromise(options, data, meta) {
     var client = options.ssl? https : http;

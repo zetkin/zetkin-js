@@ -13,7 +13,7 @@ describe('resource proxy', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.method, 'GET');
-                    assert.equal(opts.path, '/v1/users/me');
+                    assert.equal(opts.path, '/users/me');
                 },
             }),
         });
@@ -29,7 +29,7 @@ describe('resource proxy', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.method, 'PATCH');
-                    assert.equal(opts.path, '/v1/users/me');
+                    assert.equal(opts.path, '/users/me');
                 },
                 validateRequestData: data => {
                     assert.deepEqual(data, { first_name: 'Clara' });
@@ -48,7 +48,7 @@ describe('resource proxy', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.method, 'POST');
-                    assert.equal(opts.path, '/v1/users/me');
+                    assert.equal(opts.path, '/users/me');
                 },
                 validateRequestData: data => {
                     assert.deepEqual(data, { first_name: 'Clara' });
@@ -67,7 +67,7 @@ describe('resource proxy', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.method, 'DELETE');
-                    assert.equal(opts.path, '/v1/users/me');
+                    assert.equal(opts.path, '/users/me');
                 },
             }),
         });
@@ -83,7 +83,7 @@ describe('resource proxy', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.method, 'PUT');
-                    assert.equal(opts.path, '/v1/users/me');
+                    assert.equal(opts.path, '/users/me');
                 },
             }),
         });
