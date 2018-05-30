@@ -29,6 +29,8 @@
     "proxyquire": "^1.8.0"
   },
   "dependencies": {
+    "atob": "^2.1.1",
+    "btoa": "^1.2.1",
     "client-oauth2": "^4.1.0"
   }
 }

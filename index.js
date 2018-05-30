@@ -3,6 +3,8 @@ var Hoek = require('hoek');
 var http = require('http');
 var https = require('https');
 var ClientOAuth2 = require('client-oauth2')
+var atob = require('atob');
+var btoa = require('btoa');
 
 
 /**
@@ -66,8 +68,30 @@ var Zetkin = function() {
         }
     }
 
-    this.getLoginUrl = function() {
+    this.setToken = function(token) {
         _validateClientConfiguration();
+
+        try {
+            var data = JSON.parse(atob(token));
+        }
+        catch (err) {
+            throw new Error('Malformed token');
+        }
+
+        _token = _client.createToken(data);
+    }
+
+    this.getToken = function() {
+        _validateClientConfiguration();
+        if (_token) {
+            return btoa(JSON.stringify(_token.data));
+        }
+
+        return null;
+    }
+
+    this.getLoginUrl = function() {
+
         return _config.clientSecret?
             _client.code.getUri() : _client.token.getUri();
     }
