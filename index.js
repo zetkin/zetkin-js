@@ -92,21 +92,35 @@ var Zetkin = function() {
         return null;
     }
 
-    this.getLoginUrl = function() {
+    this.getLoginUrl = function(redirectUri) {
+        _validateClientConfiguration();
+
+        var opts = {
+            redirectUri: redirectUri,
+        };
 
         return _config.clientSecret?
-            _client.code.getUri() : _client.token.getUri();
+            _client.code.getUri(opts) : _client.token.getUri(opts);
     }
 
-    this.authenticate = function(url) {
-        if (!url) {
+    this.authenticate = function(uri) {
+        if (!uri) {
             throw new Error('Missing authentication redirect URL');
         }
 
         _validateClientConfiguration();
 
+        // Remove code from URL (what's left should be redirect URL)
+        var uriObj = url.parse(uri, true);
+        delete uriObj.query.code;
+        delete uriObj.search;
+
+        var opts = {
+            redirectUri: url.format(uriObj),
+        };
+
         var promise = _config.clientSecret?
-            _client.code.getToken(url) : _client.token.getToken(url);
+            _client.code.getToken(uri, opts) : _client.token.getToken(uri, opts);
 
         return promise
             .then(token => _token = token);
