@@ -19,8 +19,8 @@ var Zetkin = function() {
         clientSecret: null,
         redirectUri: null,
         zetkinDomain: 'zetk.in',
-        accessTokenUri: 'http://api.{ZETKIN_DOMAIN}/v{VERSION}/oauth/token/',
-        authorizationUri: 'http://api.{ZETKIN_DOMAIN}/v{VERSION}/oauth/authorize/',
+        accessTokenUri: '{PROTOCOL}://api.{ZETKIN_DOMAIN}/v{VERSION}/oauth/token/',
+        authorizationUri: '{PROTOCOL}://api.{ZETKIN_DOMAIN}/v{VERSION}/oauth/authorize/',
         scopes: [],
         base: '',
         version: 1,
@@ -48,9 +48,11 @@ var Zetkin = function() {
                 clientId: _config.clientId,
                 clientSecret: _config.clientSecret,
                 accessTokenUri: _config.accessTokenUri
+                    .replace('{PROTOCOL}', _config.ssl? 'https' : 'http')
                     .replace('{VERSION}', _config.version)
                     .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
                 authorizationUri: _config.authorizationUri
+                    .replace('{PROTOCOL}', _config.ssl? 'https' : 'http')
                     .replace('{VERSION}', _config.version)
                     .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
                 redirectUri: _config.redirectUri,
