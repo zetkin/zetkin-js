@@ -19,8 +19,8 @@ var Zetkin = function() {
         clientSecret: null,
         redirectUri: null,
         zetkinDomain: 'zetk.in',
-        accessTokenUri: 'http://api.{ZETKIN_DOMAIN}/oauth/token/',
-        authorizationUri: 'http://api.{ZETKIN_DOMAIN}/oauth/authorize/',
+        accessTokenUri: 'http://api.{ZETKIN_DOMAIN}/v{VERSION}/oauth/token/',
+        authorizationUri: 'http://api.{ZETKIN_DOMAIN}/v{VERSION}/oauth/authorize/',
         scopes: [],
         base: '',
         version: 1,
@@ -48,8 +48,10 @@ var Zetkin = function() {
                 clientId: _config.clientId,
                 clientSecret: _config.clientSecret,
                 accessTokenUri: _config.accessTokenUri
+                    .replace('{VERSION}', _config.version)
                     .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
                 authorizationUri: _config.authorizationUri
+                    .replace('{VERSION}', _config.version)
                     .replace('{ZETKIN_DOMAIN}', _config.zetkinDomain),
                 redirectUri: _config.redirectUri,
                 scopes: [],
@@ -139,7 +141,7 @@ var Zetkin = function() {
             path = '/' + path;
         }
 
-        path = _config.base + path;
+        path = _config.base + '/v' + _config.version + path;
 
         return new ZetkinResourceProxy(this, path, _request);
     };
