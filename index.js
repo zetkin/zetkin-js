@@ -96,6 +96,15 @@ var Zetkin = function() {
         return null;
     }
 
+    this.getTokenData = function() {
+        _validateClientConfiguration();
+        if (_token) {
+            return _token.data;
+        }
+
+        return null;
+    }
+
     this.getLoginUrl = function(redirectUri) {
         _validateClientConfiguration();
 
