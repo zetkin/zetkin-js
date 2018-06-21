@@ -175,7 +175,26 @@ var Zetkin = function() {
             _token.sign(options);
         }
 
-        return requestPromise(options, data, meta);
+        return requestPromise(options, data, meta)
+            .catch(err => {
+                if (err && err.httpStatus == 401 && err.data && err.data.error == 'Key has expired, please renew') {
+                    let originalError = err;
+                    return _token
+                        .refresh()
+                        .then(token => {
+                            _token = token;
+
+                            // Re-sign and retry
+                            _token.sign(options);
+                            return requestPromise(options, data, meta);
+                        })
+                        .catch(err => {
+                            throw originalError;
+                        });
+                }
+
+                throw err;
+            });
     };
 }
 
