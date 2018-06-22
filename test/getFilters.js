@@ -10,7 +10,7 @@ const mockHttpClient = require('./helpers').mockHttpClient;
 describe('get() filters', () => {
     it('accepts null', () => {
         assert.doesNotThrow(() => {
-            Z.resource('session')
+            Z.resource('orgs')
                 .get(null, null, null)
                 .catch(err => {});
         });
@@ -18,7 +18,7 @@ describe('get() filters', () => {
 
     it('accepts an array of triplets', () => {
         assert.doesNotThrow(() => {
-            Z.resource('session')
+            Z.resource('orgs')
                 .get(null, null, [
                     ['param1', '==', 1],
                     ['param2', '==', 2],
@@ -29,14 +29,14 @@ describe('get() filters', () => {
 
     it('accepts an empty array', () => {
         assert.doesNotThrow(() => {
-            Z.resource('session')
+            Z.resource('orgs')
                 .get(null, null, []);
         });
     });
 
     it('throws error for array of non-triplets', () => {
         assert.throws(() => {
-            Z.resource('session')
+            Z.resource('orgs')
                 .get(null, null, [
                     ['param1', '=='],
                 ]);
@@ -45,7 +45,7 @@ describe('get() filters', () => {
 
     it('throws error for non-array', () => {
         assert.throws(() => {
-            Z.resource('session')
+            Z.resource('orgs')
                 .get(null, null, {});
         }, /get\(\) filters should be array of triplets/);
     });
@@ -56,12 +56,12 @@ describe('get() filters', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.path,
-                        '/session?filter=param1%3D%3D1');
+                        '/v1/orgs?filter=param1%3D%3D1');
                 },
             }),
         });
 
-        Z.resource('session')
+        Z.resource('orgs')
             .get(null, null, [
                 [ 'param1', '==', 1 ],
             ]);
@@ -73,12 +73,12 @@ describe('get() filters', () => {
                 done: done,
                 validateRequestOptions: opts => {
                     assert.equal(opts.path,
-                        '/session?filter=param1%3D%3D1&filter=param2%3D%3D2');
+                        '/v1/orgs?filter=param1%3D%3D1&filter=param2%3D%3D2');
                 },
             }),
         });
 
-        Z.resource('session')
+        Z.resource('orgs')
             .get(null, null, [
                 [ 'param1', '==', 1 ],
                 [ 'param2', '==', 2 ],

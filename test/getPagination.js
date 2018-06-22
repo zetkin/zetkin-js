@@ -12,12 +12,12 @@ describe('get() pagination', () => {
             https: mockHttpClient({
                 done: done,
                 validateRequestOptions: opts => {
-                    assert.equal(opts.path, '/session?p=2');
+                    assert.equal(opts.path, '/v1/orgs?p=2');
                 },
             }),
         });
 
-        Z.resource('session')
+        Z.resource('orgs')
             .get(2);
     });
 
@@ -26,12 +26,12 @@ describe('get() pagination', () => {
             https: mockHttpClient({
                 done: done,
                 validateRequestOptions: opts => {
-                    assert.equal(opts.path, '/session?p=2&pp=100');
+                    assert.equal(opts.path, '/v1/orgs?p=2&pp=100');
                 },
             }),
         });
 
-        Z.resource('session')
+        Z.resource('orgs')
             .get(2, 100);
     });
 });
