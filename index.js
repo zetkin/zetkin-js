@@ -187,20 +187,35 @@ var Zetkin = function() {
 
         return requestPromise(options, data, meta)
             .catch(err => {
-                if (err && err.httpStatus == 401 && err.data && err.data.error == 'Key has expired, please renew') {
+                if (err && err.httpStatus == 401) {
                     let originalError = err;
-                    return _token
-                        .refresh()
-                        .then(token => {
-                            _token = token;
+                    if (err.data && err.data.error == 'Key has expired, please renew') {
+                        return _token
+                            .refresh()
+                            .then(token => {
+                                _token = token;
 
-                            // Re-sign and retry
-                            _token.sign(options);
-                            return requestPromise(options, data, meta);
-                        })
-                        .catch(err => {
-                            throw originalError;
-                        });
+                                // Re-sign and retry
+                                _token.sign(options);
+                                return requestPromise(options, data, meta);
+                            })
+                            .catch(err => {
+                                // Try again without authorization altogether
+                                delete options.headers.Authorization;
+                                return requestPromise(options, data, meta);
+                            })
+                            .catch(err => {
+                                throw originalError;
+                            });
+                    }
+                    else {
+                        // Try again without authorization
+                        delete options.headers.Authorization;
+                        return requestPromise(options, data, meta)
+                            .catch(err => {
+                                throw originalError;
+                            });
+                    }
                 }
 
                 throw err;
