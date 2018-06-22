@@ -94,4 +94,65 @@ describe('Token management', () => {
             assert.equal(null, z.getToken());
         });
     });
+
+    describe('getTokenData()', () => {
+        it('returns token data', () => {
+            let z = require('../').construct({
+                clientId: 'abc123',
+            });
+
+            const TOKEN = btoa(JSON.stringify({
+                access: 'abc123',
+                refresh: '123abc',
+                type: 'bearer',
+            }));
+
+            z.setToken(TOKEN);
+            assert.deepEqual(z.getTokenData(), {
+                access: 'abc123',
+                refresh: '123abc',
+                type: 'bearer',
+            });
+        });
+
+        it('returns null if no token is set', () => {
+            let z = require('../').construct({
+                clientId: 'abc123',
+            });
+
+            assert.strictEqual(z.getTokenData(), null);
+        });
+    });
+
+    describe('setTokenData()', () => {
+        it('sets token data as expected', () => {
+            let z = require('../').construct({
+                clientId: 'abc123',
+            });
+
+            z.setTokenData({
+                access: 'abc123',
+                refresh: '123abc',
+                type: 'bearer',
+            });
+
+            assert.deepEqual(z.getTokenData(), {
+                access: 'abc123',
+                refresh: '123abc',
+                type: 'bearer',
+            });
+        });
+    });
+
+    describe('setAccessToken()', () => {
+        it('sets just the access token and type', () => {
+            let z = require('../').construct({
+                clientId: 'abc123',
+            });
+
+            z.setAccessToken('abc123');
+            assert.equal(z.getTokenData().access_token, 'abc123');
+            assert.equal(z.getTokenData().token_type, 'bearer');
+        });
+    });
 });

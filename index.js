@@ -96,6 +96,16 @@ var Zetkin = function() {
         return null;
     }
 
+    this.setAccessToken = function(accessToken) {
+        _validateClientConfiguration();
+        _token = _client.createToken(accessToken, null, 'bearer');
+    }
+
+    this.setTokenData = function(data) {
+        _validateClientConfiguration();
+        _token = _client.createToken(data);
+    }
+
     this.getTokenData = function() {
         _validateClientConfiguration();
         if (_token) {
