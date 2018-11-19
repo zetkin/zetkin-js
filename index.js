@@ -348,9 +348,18 @@ function requestPromise(options, data, meta) {
             });
 
             res.on('end', function() {
-                var data = json? JSON.parse(json) : null;
+                var data;
+                var success;
 
-                var success = (res.statusCode >= 200 && res.statusCode < 400);
+                try {
+                  data = json? JSON.parse(json) : null;
+                  success = (res.statusCode >= 200 && res.statusCode < 400);
+                }
+                catch (e) {
+                  data = null;
+                  success = false;
+                }
+
                 if (success) {
                     resolve({
                         data: data,

@@ -46,7 +46,11 @@ const mockHttpClient = mockOpts => {
                             reqOnError(mockOpts.mockError);
                         }
                         else {
-                            let data = JSON.stringify(mockOpts.mockResponseData);
+                            let data = mockOpts.mockResponseData;
+
+                            if (typeof data !== 'string') {
+                              data = JSON.stringify(data);
+                            }
 
                             resOnData(data);
                             resOnEnd();
