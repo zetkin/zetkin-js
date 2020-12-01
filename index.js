@@ -151,10 +151,13 @@ var Zetkin = function() {
 
     /**
      * Retrieve a resource proxy through which requests to that resource can be
-     * made.
+     * made. An optional query object may be added as the last argument.
      *
      * Example: Z.resource('orgs', 1, 'people').get() will make a HTTP GET
      * request to the /orgs/1/people resource.
+     *
+     * Example: Z.resource('orgs', 1', 'sub_organizations', { recursive: true }) u
+     * will make a HTTP GET request to /orgs/1/people?recursive
     */
     this.resource = function() {
         args = Array.prototype.filter.call(arguments, arg => typeof(arg) === 'string' || typeof(arg) === 'number');
