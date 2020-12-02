@@ -177,12 +177,13 @@ var Zetkin = function() {
             }
             query = Object.keys(queryObject)
                 // Filter any keys with values that evaluate to false
-                .filter(key => !!queryObject[key])
+                .filter(key => queryObject[key] !== false)
                 .map(key => {
+                    enckey = encodeURIComponent(key);
                     if(queryObject[key] === true) {
-                        return key;
+                        return enckey
                     } else {
-                        return key + '=' + queryObject[key];
+                        return enckey + '=' + encodeURIComponent(queryObject[key]);
                     }
                 });
         } else if(args.length != arguments.length) {

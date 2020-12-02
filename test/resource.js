@@ -39,4 +39,13 @@ describe('resource()', () => {
         let r = Z.resource('/organizations/sub_orgs', { recursive: 2 });
         assert.equal(r.getPath(), '/v1/organizations/sub_orgs?recursive=2');
     });
+
+    it('generates a resource proxy with the right path and properly escaped query params', () => {
+        let r = Z.resource('/organizations/sub_orgs', { 'foo&bar': 'dummy%test' });
+        assert.equal(r.getPath(), '/v1/organizations/sub_orgs?foo%26bar=dummy%25test');
+    });
+
+    it('throws error when passing object as wrong argument', () => {
+        assert.throws(() => Z.resource({ recursive: true }, 'orgs',  1, 'sub_organizations'))
+    });
 });
