@@ -46,6 +46,10 @@ describe('resource()', () => {
     });
 
     it('throws error when passing object as wrong argument', () => {
-        assert.throws(() => Z.resource({ recursive: true }, 'orgs',  1, 'sub_organizations'))
+        assert.throws(() => Z.resource({ recursive: true }, 'orgs',  1, 'sub_organizations'));
+    });
+
+    it('throws error when passing multiple objects', () => {
+        assert.throws(() => Z.resource('orgs', {foo: 'bar'}, {recursive: true}));
     });
 });
