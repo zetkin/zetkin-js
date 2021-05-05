@@ -115,11 +115,12 @@ var Zetkin = function() {
         return null;
     }
 
-    this.getLoginUrl = function(redirectUri) {
+    this.getLoginUrl = function(redirectUri, scopes) {
         _validateClientConfiguration();
 
         var opts = {
             redirectUri: redirectUri,
+            scopes: scopes,
         };
 
         return _config.clientSecret?
