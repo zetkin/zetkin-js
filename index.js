@@ -190,7 +190,7 @@ var Zetkin = function() {
             .catch(err => {
                 if (err && err.httpStatus == 401) {
                     let originalError = err;
-                    if (err.data && err.data.error == 'Key has expired, please renew') {
+                    if (err.data && err.data.error == 'invalid_token') {
                         return _token
                             .refresh()
                             .then(token => {
