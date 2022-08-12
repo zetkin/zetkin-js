@@ -168,6 +168,13 @@ var Zetkin = function() {
         return new ZetkinResourceProxy(this, path, _request);
     };
 
+    this.refresh = function() {
+        return _token.refresh()
+            .then(token => {
+                _token = token;
+            });
+    }
+
     /**
      * Make request via HTTP or HTTPS depending on the configuration.
     */
